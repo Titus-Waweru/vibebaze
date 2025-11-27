@@ -1,0 +1,138 @@
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { Sparkles, Users, Heart, Zap } from "lucide-react";
+import heroGradient from "@/assets/hero-gradient.jpg";
+
+const Landing = () => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-background overflow-hidden">
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex items-center justify-center">
+        {/* Background with gradient overlay */}
+        <div className="absolute inset-0 z-0">
+          <img 
+            src={heroGradient} 
+            alt="VibeSphere Background" 
+            className="w-full h-full object-cover opacity-40"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+        </div>
+
+        {/* Floating orbs */}
+        <div className="absolute top-20 left-10 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-float" style={{ animationDelay: "1s" }} />
+
+        {/* Content */}
+        <div className="relative z-10 container mx-auto px-4 text-center">
+          <div className="animate-fade-in">
+            <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
+              VibeSphere
+            </h1>
+            <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Express yourself. Connect authentically. Share your vibe with the world.
+            </p>
+            <div className="flex gap-4 justify-center flex-wrap">
+              <Button 
+                size="lg" 
+                className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-accent-glow transition-all duration-300 text-lg px-8 py-6"
+                onClick={() => navigate("/auth?mode=signup")}
+              >
+                Get Started
+                <Sparkles className="ml-2 h-5 w-5" />
+              </Button>
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="border-primary/50 hover:bg-primary/10 text-lg px-8 py-6"
+                onClick={() => navigate("/auth?mode=login")}
+              >
+                Sign In
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20 max-w-4xl mx-auto animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            {[
+              { icon: Users, label: "Active Users", value: "10M+" },
+              { icon: Heart, label: "Daily Vibes", value: "50M+" },
+              { icon: Zap, label: "Connections", value: "100M+" },
+              { icon: Sparkles, label: "Communities", value: "500K+" },
+            ].map((stat, index) => (
+              <div key={index} className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
+                <stat.icon className="h-8 w-8 text-primary mx-auto mb-2" />
+                <div className="text-3xl font-bold text-foreground">{stat.value}</div>
+                <div className="text-sm text-muted-foreground">{stat.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto">
+          <h2 className="text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-primary bg-clip-text text-transparent">
+            Your Creative Universe
+          </h2>
+          
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {[
+              {
+                title: "Share Your World",
+                description: "Post videos, photos, audio, and thoughts. Express yourself in any format.",
+                icon: Sparkles,
+              },
+              {
+                title: "Build Connections",
+                description: "Follow creators you love. Engage with authentic communities.",
+                icon: Users,
+              },
+              {
+                title: "Discover Vibes",
+                description: "Explore trending content. Find your people. Create your feed.",
+                icon: Heart,
+              },
+            ].map((feature, index) => (
+              <div 
+                key={index} 
+                className="bg-card border border-border rounded-3xl p-8 hover:border-primary/50 transition-all duration-300 group hover:shadow-glow"
+              >
+                <div className="bg-gradient-primary rounded-2xl w-16 h-16 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                  <feature.icon className="h-8 w-8 text-background" />
+                </div>
+                <h3 className="text-2xl font-bold mb-4 text-foreground">{feature.title}</h3>
+                <p className="text-muted-foreground">{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 relative">
+        <div className="absolute inset-0 bg-gradient-primary opacity-10" />
+        <div className="container mx-auto text-center relative z-10">
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-foreground">
+            Ready to Share Your Vibe?
+          </h2>
+          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Join millions of creators expressing themselves on VibeSphere
+          </p>
+          <Button 
+            size="lg" 
+            className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-accent-glow transition-all duration-300 text-lg px-8 py-6"
+            onClick={() => navigate("/auth?mode=signup")}
+          >
+            Create Your Account
+            <Zap className="ml-2 h-5 w-5" />
+          </Button>
+        </div>
+      </section>
+    </div>
+  );
+};
+
+export default Landing;
