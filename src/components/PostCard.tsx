@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import CommentSheet from "./CommentSheet";
 
 interface PostCardProps {
   post: {
@@ -29,7 +30,9 @@ interface PostCardProps {
 const PostCard = ({ post, currentUserId }: PostCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes_count);
+  const [commentsCount, setCommentsCount] = useState(post.comments_count);
   const [isSaved, setIsSaved] = useState(false);
+  const [commentSheetOpen, setCommentSheetOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -69,7 +72,6 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
 
     try {
       if (isLiked) {
-        // Unlike
         await supabase
           .from("likes")
           .delete()
@@ -78,7 +80,6 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
         setIsLiked(false);
         setLikesCount(prev => Math.max(0, prev - 1));
       } else {
-        // Like
         await supabase
           .from("likes")
           .insert({ post_id: post.id, user_id: currentUserId });
@@ -132,97 +133,112 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
   };
 
   return (
-    <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-card hover:shadow-glow transition-all duration-300 animate-fade-in">
-      {/* Header */}
-      <div
-        className="p-4 flex items-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors"
-        onClick={handleProfileClick}
-      >
-        <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-          <AvatarImage src={post.profiles?.avatar_url} />
-          <AvatarFallback className="bg-gradient-primary text-background">
-            {post.profiles?.username?.[0]?.toUpperCase() || "U"}
-          </AvatarFallback>
-        </Avatar>
-        <div>
-          <p className="font-semibold text-foreground">{post.profiles?.username || "Unknown"}</p>
-          <p className="text-xs text-muted-foreground">
-            {new Date(post.created_at).toLocaleDateString()}
-          </p>
+    <>
+      <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-card hover:shadow-glow transition-all duration-300 animate-fade-in">
+        {/* Header */}
+        <div
+          className="p-4 flex items-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors"
+          onClick={handleProfileClick}
+        >
+          <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+            <AvatarImage src={post.profiles?.avatar_url} />
+            <AvatarFallback className="bg-gradient-primary text-background">
+              {post.profiles?.username?.[0]?.toUpperCase() || "U"}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="font-semibold text-foreground">{post.profiles?.username || "Unknown"}</p>
+            <p className="text-xs text-muted-foreground">
+              {new Date(post.created_at).toLocaleDateString()}
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Media */}
-      {post.type === "image" && post.media_url && (
-        <img
-          src={post.media_url}
-          alt="Post"
-          className="w-full aspect-square object-cover"
-        />
-      )}
-      {post.type === "video" && post.media_url && (
-        <video
-          src={post.media_url}
-          controls
-          className="w-full aspect-video object-cover bg-muted"
-        />
-      )}
-      {post.type === "audio" && post.media_url && (
-        <div className="p-8 bg-gradient-primary/10">
-          <audio src={post.media_url} controls className="w-full" />
-        </div>
-      )}
-      {post.type === "text" && (
-        <div className="p-8 bg-gradient-secondary">
-          <p className="text-lg text-foreground">{post.caption}</p>
-        </div>
-      )}
+        {/* Media */}
+        {post.type === "image" && post.media_url && (
+          <img
+            src={post.media_url}
+            alt="Post"
+            className="w-full aspect-square object-cover"
+          />
+        )}
+        {post.type === "video" && post.media_url && (
+          <video
+            src={post.media_url}
+            controls
+            className="w-full aspect-video object-cover bg-muted"
+          />
+        )}
+        {post.type === "audio" && post.media_url && (
+          <div className="p-8 bg-gradient-primary/10">
+            <audio src={post.media_url} controls className="w-full" />
+          </div>
+        )}
+        {post.type === "text" && (
+          <div className="p-8 bg-gradient-secondary">
+            <p className="text-lg text-foreground">{post.caption}</p>
+          </div>
+        )}
 
-      {/* Actions */}
-      <div className="p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        {/* Actions */}
+        <div className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLike}
+                className={`hover:text-primary transition-colors ${isLiked ? "text-primary" : ""}`}
+              >
+                <Heart className={`h-6 w-6 ${isLiked ? "fill-current" : ""}`} />
+                <span className="ml-1">{likesCount}</span>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCommentSheetOpen(true)}
+                className="hover:text-primary"
+              >
+                <MessageCircle className="h-6 w-6" />
+                <span className="ml-1">{commentsCount}</span>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleShare} className="hover:text-accent">
+                <Share2 className="h-6 w-6" />
+              </Button>
+            </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleLike}
-              className={`hover:text-primary transition-colors ${isLiked ? "text-primary" : ""}`}
+              onClick={handleSave}
+              className={`hover:text-accent transition-colors ${isSaved ? "text-accent" : ""}`}
             >
-              <Heart className={`h-6 w-6 ${isLiked ? "fill-current" : ""}`} />
-              <span className="ml-1">{likesCount}</span>
-            </Button>
-            <Button variant="ghost" size="sm" className="hover:text-primary">
-              <MessageCircle className="h-6 w-6" />
-              <span className="ml-1">{post.comments_count}</span>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleShare} className="hover:text-accent">
-              <Share2 className="h-6 w-6" />
+              <Bookmark className={`h-6 w-6 ${isSaved ? "fill-current" : ""}`} />
             </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleSave}
-            className={`hover:text-accent transition-colors ${isSaved ? "text-accent" : ""}`}
-          >
-            <Bookmark className={`h-6 w-6 ${isSaved ? "fill-current" : ""}`} />
-          </Button>
-        </div>
 
-        {/* Caption */}
-        {post.caption && post.type !== "text" && (
-          <p className="text-sm text-foreground">
-            <span
-              className="font-semibold cursor-pointer hover:underline"
-              onClick={handleProfileClick}
-            >
-              {post.profiles?.username}
-            </span>{" "}
-            {post.caption}
-          </p>
-        )}
+          {/* Caption */}
+          {post.caption && post.type !== "text" && (
+            <p className="text-sm text-foreground">
+              <span
+                className="font-semibold cursor-pointer hover:underline"
+                onClick={handleProfileClick}
+              >
+                {post.profiles?.username}
+              </span>{" "}
+              {post.caption}
+            </p>
+          )}
+        </div>
       </div>
-    </div>
+
+      <CommentSheet
+        open={commentSheetOpen}
+        onOpenChange={setCommentSheetOpen}
+        postId={post.id}
+        currentUserId={currentUserId}
+        onCommentCountChange={setCommentsCount}
+      />
+    </>
   );
 };
 
