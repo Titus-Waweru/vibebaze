@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
-import { Settings, LogOut, Loader2 } from "lucide-react";
-import { signOut } from "@/lib/auth";
-import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
+import FollowButton from "@/components/FollowButton";
 import FollowListModal from "@/components/FollowListModal";
 
-const Profile = () => {
+const UserProfile = () => {
+  const { userId } = useParams<{ userId: string }>();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
@@ -22,33 +21,24 @@ const Profile = () => {
     type: "followers",
   });
 
-  const openFollowersModal = () => {
-    setFollowModal({ open: true, type: "followers" });
-  };
-
-  const openFollowingModal = () => {
-    setFollowModal({ open: true, type: "following" });
-  };
-
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
+    // If viewing own profile, redirect to /profile
+    if (user && userId === user.id) {
+      navigate("/profile");
+      return;
     }
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    if (user) {
+    if (userId) {
       fetchProfile();
       fetchUserPosts();
     }
-  }, [user]);
+  }, [userId, user]);
 
   const fetchProfile = async () => {
     try {
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user?.id)
+        .eq("id", userId)
         .single();
 
       if (error) throw error;
@@ -65,7 +55,8 @@ const Profile = () => {
       const { data, error } = await supabase
         .from("posts")
         .select("*")
-        .eq("user_id", user?.id)
+        .eq("user_id", userId)
+        .eq("is_private", false)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -75,17 +66,15 @@ const Profile = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast.error("Failed to sign out");
-    } else {
-      toast.success("Signed out successfully");
-      navigate("/");
-    }
+  const openFollowersModal = () => {
+    setFollowModal({ open: true, type: "followers" });
   };
 
-  if (authLoading || loading || !user || !profile) {
+  const openFollowingModal = () => {
+    setFollowModal({ open: true, type: "following" });
+  };
+
+  if (loading || !profile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -96,7 +85,7 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
       <Navbar />
-      
+
       <div className="container mx-auto px-4 pt-6 max-w-2xl">
         <Card className="border-border/50 shadow-card">
           <CardContent className="pt-6">
@@ -142,33 +131,23 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex gap-4 w-full max-w-md">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => navigate("/settings")}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Edit Profile
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleSignOut}
-                  className="border-destructive/50 hover:bg-destructive/10 text-destructive"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
+              {/* Follow Button */}
+              <div className="w-full max-w-md">
+                <FollowButton
+                  targetUserId={userId!}
+                  currentUserId={user?.id}
+                  variant="default"
+                  size="lg"
+                />
               </div>
             </div>
 
             {/* Posts Grid */}
             <div className="mt-8 border-t border-border pt-8">
-              <h3 className="text-lg font-semibold mb-4">Your Posts</h3>
+              <h3 className="text-lg font-semibold mb-4">Posts</h3>
               {posts.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  No posts yet. Create your first one!
+                  No public posts yet.
                 </p>
               ) : (
                 <div className="grid grid-cols-3 gap-2">
@@ -176,13 +155,26 @@ const Profile = () => {
                     <div
                       key={post.id}
                       className="aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => navigate(`/post/${post.id}`)}
                     >
-                      {post.media_url && (
-                        <img
-                          src={post.media_url}
-                          alt="Post"
-                          className="w-full h-full object-cover"
-                        />
+                      {post.media_url ? (
+                        post.type === "video" ? (
+                          <video
+                            src={post.media_url}
+                            className="w-full h-full object-cover"
+                            muted
+                          />
+                        ) : (
+                          <img
+                            src={post.media_url}
+                            alt="Post"
+                            className="w-full h-full object-cover"
+                          />
+                        )
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center p-2 bg-gradient-secondary">
+                          <p className="text-xs text-foreground line-clamp-3">{post.caption}</p>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -196,12 +188,12 @@ const Profile = () => {
       <FollowListModal
         open={followModal.open}
         onOpenChange={(open) => setFollowModal((prev) => ({ ...prev, open }))}
-        userId={user.id}
+        userId={userId!}
         type={followModal.type}
-        currentUserId={user.id}
+        currentUserId={user?.id}
       />
     </div>
   );
 };
 
-export default Profile;
+export default UserProfile;

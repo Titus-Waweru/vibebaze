@@ -1,9 +1,10 @@
 import { Heart, MessageCircle, Share2, Bookmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface PostCardProps {
   post: {
@@ -29,6 +30,36 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes_count);
   const [isSaved, setIsSaved] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (currentUserId) {
+      checkLikeStatus();
+      checkSaveStatus();
+    }
+  }, [currentUserId, post.id]);
+
+  const checkLikeStatus = async () => {
+    const { data } = await supabase
+      .from("likes")
+      .select("id")
+      .eq("post_id", post.id)
+      .eq("user_id", currentUserId)
+      .maybeSingle();
+    
+    setIsLiked(!!data);
+  };
+
+  const checkSaveStatus = async () => {
+    const { data } = await supabase
+      .from("saved_posts")
+      .select("id")
+      .eq("post_id", post.id)
+      .eq("user_id", currentUserId)
+      .maybeSingle();
+    
+    setIsSaved(!!data);
+  };
 
   const handleLike = async () => {
     if (!currentUserId) {
@@ -45,7 +76,7 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
           .eq("post_id", post.id)
           .eq("user_id", currentUserId);
         setIsLiked(false);
-        setLikesCount(prev => prev - 1);
+        setLikesCount(prev => Math.max(0, prev - 1));
       } else {
         // Like
         await supabase
@@ -92,10 +123,21 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
     toast.success("Link copied to clipboard!");
   };
 
+  const handleProfileClick = () => {
+    if (post.user_id === currentUserId) {
+      navigate("/profile");
+    } else {
+      navigate(`/user/${post.user_id}`);
+    }
+  };
+
   return (
     <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-card hover:shadow-glow transition-all duration-300 animate-fade-in">
       {/* Header */}
-      <div className="p-4 flex items-center gap-3">
+      <div
+        className="p-4 flex items-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors"
+        onClick={handleProfileClick}
+      >
         <Avatar className="h-10 w-10 ring-2 ring-primary/20">
           <AvatarImage src={post.profiles?.avatar_url} />
           <AvatarFallback className="bg-gradient-primary text-background">
@@ -170,7 +212,13 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
         {/* Caption */}
         {post.caption && post.type !== "text" && (
           <p className="text-sm text-foreground">
-            <span className="font-semibold">{post.profiles?.username}</span> {post.caption}
+            <span
+              className="font-semibold cursor-pointer hover:underline"
+              onClick={handleProfileClick}
+            >
+              {post.profiles?.username}
+            </span>{" "}
+            {post.caption}
           </p>
         )}
       </div>
