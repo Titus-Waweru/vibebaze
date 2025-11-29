@@ -1,4 +1,4 @@
-import { Home, Search, PlusCircle, Bell, User } from "lucide-react";
+import { Home, Search, PlusCircle, Bell, User, Download } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -65,7 +65,17 @@ const Navbar = () => {
           </div>
 
           {/* Right side - Desktop */}
-          <div className="hidden md:block w-20"></div>
+          <div className="hidden md:flex items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/install")}
+              className="border-primary/50 hover:bg-primary/10 gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Install
+            </Button>
+          </div>
         </div>
       </div>
     </nav>

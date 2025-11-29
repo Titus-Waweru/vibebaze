@@ -1,8 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Users, Heart, Zap } from "lucide-react";
+import { Sparkles, Users, Heart, Zap, Download } from "lucide-react";
 import heroGradient from "@/assets/hero-gradient.jpg";
-
 const Landing = () => {
   const navigate = useNavigate();
 
@@ -49,6 +48,18 @@ const Landing = () => {
                 onClick={() => navigate("/auth?mode=login")}
               >
                 Sign In
+              </Button>
+            </div>
+            
+            {/* Install App Banner */}
+            <div className="mt-6">
+              <Button
+                variant="ghost"
+                className="text-muted-foreground hover:text-primary hover:bg-primary/10 gap-2"
+                onClick={() => navigate("/install")}
+              >
+                <Download className="h-4 w-4" />
+                Install App for Offline Access
               </Button>
             </div>
           </div>
