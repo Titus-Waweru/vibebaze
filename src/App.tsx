@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import Feed from "./pages/Feed";
 import CreatePost from "./pages/CreatePost";
 import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import UserProfile from "./pages/UserProfile";
 import Search from "./pages/Search";
 import Notifications from "./pages/Notifications";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/feed" element={<Feed />} />
           <Route path="/create" element={<CreatePost />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="/user/:userId" element={<UserProfile />} />
           <Route path="/search" element={<Search />} />
           <Route path="/notifications" element={<Notifications />} />
