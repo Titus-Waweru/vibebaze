@@ -156,27 +156,40 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
 
         {/* Media */}
         {post.type === "image" && post.media_url && (
-          <img
-            src={post.media_url}
-            alt="Post"
-            className="w-full aspect-square object-cover"
-          />
+          <div className="relative w-full bg-muted">
+            <img
+              src={post.media_url}
+              alt="Post"
+              className="w-full max-h-[600px] object-contain"
+            />
+          </div>
         )}
         {post.type === "video" && post.media_url && (
-          <video
-            src={post.media_url}
-            controls
-            className="w-full aspect-video object-cover bg-muted"
-          />
+          <div className="relative w-full bg-black">
+            <video
+              src={post.media_url}
+              controls
+              className="w-full max-h-[600px] object-contain"
+              playsInline
+              preload="metadata"
+            />
+          </div>
         )}
         {post.type === "audio" && post.media_url && (
-          <div className="p-8 bg-gradient-primary/10">
+          <div className="p-8 bg-gradient-to-br from-primary/10 to-accent/10">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-24 h-24 rounded-full bg-gradient-primary flex items-center justify-center">
+                <svg className="w-12 h-12 text-background" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                </svg>
+              </div>
+            </div>
             <audio src={post.media_url} controls className="w-full" />
           </div>
         )}
         {post.type === "text" && (
-          <div className="p-8 bg-gradient-secondary">
-            <p className="text-lg text-foreground">{post.caption}</p>
+          <div className="p-8 bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 min-h-[200px] flex items-center justify-center">
+            <p className="text-xl text-foreground text-center font-medium leading-relaxed">{post.caption}</p>
           </div>
         )}
 
