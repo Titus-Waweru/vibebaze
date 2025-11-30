@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, Camera, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Bell, Camera, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 const Settings = () => {
@@ -23,6 +25,22 @@ const Settings = () => {
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  const {
+    isSubscribed,
+    isSupported,
+    loading: notificationLoading,
+    subscribe,
+    unsubscribe,
+  } = usePushNotifications(user?.id);
+
+  const handleNotificationToggle = async () => {
+    if (isSubscribed) {
+      await unsubscribe();
+    } else {
+      await subscribe();
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -273,6 +291,34 @@ const Settings = () => {
               )}
               Save Changes
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Notification Settings */}
+        <Card className="border-border/50 shadow-card mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label>Push Notifications</Label>
+                <p className="text-sm text-muted-foreground">
+                  {isSupported 
+                    ? "Get notified about new followers, likes, and posts"
+                    : "Push notifications are not supported on this device"
+                  }
+                </p>
+              </div>
+              <Switch
+                checked={isSubscribed}
+                onCheckedChange={handleNotificationToggle}
+                disabled={!isSupported || notificationLoading}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
