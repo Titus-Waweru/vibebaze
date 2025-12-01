@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, Bell, Camera, Loader2, Save } from "lucide-react";
+import { ArrowLeft, Bell, Camera, ChevronRight, DollarSign, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 
 const Settings = () => {
@@ -318,6 +318,29 @@ const Settings = () => {
                 onCheckedChange={handleNotificationToggle}
                 disabled={!isSupported || notificationLoading}
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Creator Earnings */}
+        <Card 
+          className="border-border/50 shadow-card mt-6 cursor-pointer hover:border-primary/50 transition-colors"
+          onClick={() => navigate("/earnings")}
+        >
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-primary/20">
+                  <DollarSign className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Creator Earnings</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Get paid when you reach 10,000 views
+                  </p>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
