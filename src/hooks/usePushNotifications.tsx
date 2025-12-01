@@ -1,36 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { requestFCMToken, onFCMMessage, initializeFirebase } from "@/lib/firebase";
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return window.btoa(binary);
-}
+// VAPID public key for FCM
+const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 
 export const usePushNotifications = (userId: string | undefined) => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission>("default");
   const [loading, setLoading] = useState(false);
+  const [fcmToken, setFcmToken] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if push notifications are supported
-    const supported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    const supported = 
+      "serviceWorker" in navigator && 
+      "PushManager" in window && 
+      "Notification" in window;
     setIsSupported(supported);
 
     if (supported && typeof Notification !== "undefined") {
@@ -41,19 +29,55 @@ export const usePushNotifications = (userId: string | undefined) => {
     }
   }, [userId]);
 
+  // Set up foreground message listener
+  useEffect(() => {
+    if (!isSubscribed) return;
+
+    const unsubscribe = onFCMMessage((payload) => {
+      // Show toast for foreground notifications
+      const title = payload.notification?.title || payload.data?.title || "VibeSphere";
+      const body = payload.notification?.body || payload.data?.body || "";
+      
+      toast(title, {
+        description: body,
+        action: payload.data?.url ? {
+          label: "View",
+          onClick: () => window.location.href = payload.data.url,
+        } : undefined,
+      });
+    });
+
+    return () => {
+      if (typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    };
+  }, [isSubscribed]);
+
   const checkSubscription = async () => {
     if (!userId) return;
 
     try {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
-      setIsSubscribed(!!subscription);
+      // Check if user has FCM token stored
+      const { data, error } = await supabase
+        .from("push_subscriptions")
+        .select("endpoint")
+        .eq("user_id", userId)
+        .limit(1);
+
+      if (!error && data && data.length > 0) {
+        // Check if it's an FCM token (starts with FCM prefix pattern)
+        const hasValidToken = data.some(sub => 
+          sub.endpoint && !sub.endpoint.startsWith("browser-")
+        );
+        setIsSubscribed(hasValidToken);
+      }
     } catch (error) {
       console.error("Error checking subscription:", error);
     }
   };
 
-  const subscribe = async () => {
+  const subscribe = useCallback(async () => {
     if (!userId || !isSupported) {
       toast.error("Push notifications not supported on this device");
       return false;
@@ -62,7 +86,7 @@ export const usePushNotifications = (userId: string | undefined) => {
     setLoading(true);
 
     try {
-      // Request permission
+      // Request notification permission
       const permissionResult = await Notification.requestPermission();
       setPermission(permissionResult);
 
@@ -72,70 +96,110 @@ export const usePushNotifications = (userId: string | undefined) => {
         return false;
       }
 
-      // Register service worker if not already registered
-      let registration = await navigator.serviceWorker.getRegistration();
-      if (!registration) {
-        registration = await navigator.serviceWorker.register("/sw.js");
+      // Register Firebase service worker
+      let swRegistration = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
+      if (!swRegistration) {
+        swRegistration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
         await navigator.serviceWorker.ready;
       }
 
-      // For now, we'll just save the permission status
-      // Full Web Push requires VAPID keys configured properly
+      // Initialize Firebase and get FCM token
+      initializeFirebase();
       
-      // Save a simple subscription record
-      const { error } = await supabase.from("push_subscriptions").upsert(
-        {
-          user_id: userId,
-          endpoint: `browser-${userId}-${Date.now()}`,
-          p256dh: "placeholder",
-          auth: "placeholder",
-        },
-        { onConflict: "user_id,endpoint" }
-      );
+      if (!VAPID_PUBLIC_KEY) {
+        console.warn("VAPID_PUBLIC_KEY not configured, using fallback subscription");
+        // Fallback to simple subscription
+        const { error } = await supabase.from("push_subscriptions").upsert(
+          {
+            user_id: userId,
+            endpoint: `browser-${userId}-${Date.now()}`,
+            p256dh: "placeholder",
+            auth: "placeholder",
+          },
+          { onConflict: "user_id,endpoint" }
+        );
+        if (error) throw error;
+        setIsSubscribed(true);
+        toast.success("Notifications enabled!");
+        return true;
+      }
 
-      if (error) throw error;
+      const token = await requestFCMToken(VAPID_PUBLIC_KEY);
+      
+      if (!token) {
+        throw new Error("Failed to get FCM token");
+      }
 
-      setIsSubscribed(true);
-      toast.success("Notifications enabled! You'll receive in-app alerts.");
-      return true;
-    } catch (error) {
-      console.error("Error subscribing:", error);
-      toast.error("Failed to enable notifications");
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
+      setFcmToken(token);
 
-  const unsubscribe = async () => {
-    if (!userId) return false;
-
-    setLoading(true);
-
-    try {
-      // Remove from database
+      // Delete any existing subscriptions for this user first
       await supabase
         .from("push_subscriptions")
         .delete()
         .eq("user_id", userId);
 
-      setIsSubscribed(false);
-      toast.success("Notifications disabled");
+      // Save FCM token to database
+      const { error } = await supabase.from("push_subscriptions").insert({
+        user_id: userId,
+        endpoint: token, // Store FCM token as endpoint
+        p256dh: "fcm", // Marker to identify as FCM
+        auth: "fcm",
+      });
+
+      if (error) throw error;
+
+      setIsSubscribed(true);
+      toast.success("Push notifications enabled! You'll receive alerts on your device.");
       return true;
     } catch (error) {
-      console.error("Error unsubscribing:", error);
+      console.error("Error subscribing to push notifications:", error);
+      toast.error("Failed to enable notifications. Please try again.");
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, isSupported]);
+
+  const unsubscribe = useCallback(async () => {
+    if (!userId) return false;
+
+    setLoading(true);
+
+    try {
+      // Remove FCM token from database
+      await supabase
+        .from("push_subscriptions")
+        .delete()
+        .eq("user_id", userId);
+
+      // Try to unregister service worker
+      const registration = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
+      if (registration) {
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await subscription.unsubscribe();
+        }
+      }
+
+      setIsSubscribed(false);
+      setFcmToken(null);
+      toast.success("Push notifications disabled");
+      return true;
+    } catch (error) {
+      console.error("Error unsubscribing from push notifications:", error);
       toast.error("Failed to disable notifications");
       return false;
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   return {
     isSubscribed,
     isSupported,
     permission,
     loading,
+    fcmToken,
     subscribe,
     unsubscribe,
   };

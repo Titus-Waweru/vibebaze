@@ -23,6 +23,11 @@ serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const FCM_SERVER_KEY = Deno.env.get("FCM_SERVER_KEY");
+
+    if (!FCM_SERVER_KEY) {
+      console.warn("FCM_SERVER_KEY not configured, push notifications will not be sent");
+    }
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
     const { userId, title, body, icon, data }: PushPayload = await req.json();
@@ -51,28 +56,108 @@ serve(async (req) => {
 
     console.log(`Found ${subscriptions.length} subscription(s)`);
 
-    // For now, we'll just log that notifications would be sent
-    // Full Web Push requires complex encryption - this is a placeholder
-    // In production, you'd use a service like Firebase Cloud Messaging
-    // or implement the full Web Push protocol
+    const results: { success: boolean; endpoint: string; error?: string }[] = [];
 
-    const notificationData = {
-      title,
-      body,
-      icon: icon || "/pwa-192x192.png",
-      badge: "/pwa-192x192.png",
-      data: data || {},
-    };
+    for (const subscription of subscriptions) {
+      const isFCM = subscription.p256dh === "fcm" && subscription.auth === "fcm";
+      
+      if (isFCM && FCM_SERVER_KEY) {
+        // Send via Firebase Cloud Messaging
+        try {
+          const fcmResponse = await fetch("https://fcm.googleapis.com/fcm/send", {
+            method: "POST",
+            headers: {
+              "Authorization": `key=${FCM_SERVER_KEY}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              to: subscription.endpoint, // FCM token stored as endpoint
+              notification: {
+                title,
+                body,
+                icon: icon || "/pwa-192x192.png",
+                badge: "/pwa-192x192.png",
+                click_action: data?.url || "/notifications",
+              },
+              data: {
+                ...data,
+                title,
+                body,
+              },
+              android: {
+                priority: "high",
+                notification: {
+                  sound: "default",
+                  click_action: "OPEN_APP",
+                },
+              },
+              webpush: {
+                headers: {
+                  Urgency: "high",
+                },
+                notification: {
+                  icon: icon || "/pwa-192x192.png",
+                  badge: "/pwa-192x192.png",
+                  vibrate: [100, 50, 100],
+                  requireInteraction: false,
+                },
+                fcm_options: {
+                  link: data?.url || "/notifications",
+                },
+              },
+            }),
+          });
 
-    console.log("Notification payload:", JSON.stringify(notificationData));
+          const fcmResult = await fcmResponse.json();
+          console.log("FCM response:", JSON.stringify(fcmResult));
 
-    // Store notification in the database for in-app display
-    // The actual push would be sent via FCM or similar service
+          if (fcmResult.success === 1) {
+            results.push({ success: true, endpoint: subscription.endpoint.substring(0, 20) + "..." });
+          } else if (fcmResult.failure === 1) {
+            console.error("FCM delivery failed:", fcmResult.results?.[0]?.error);
+            
+            // If token is invalid, remove it from database
+            if (fcmResult.results?.[0]?.error === "NotRegistered" || 
+                fcmResult.results?.[0]?.error === "InvalidRegistration") {
+              console.log("Removing invalid FCM token");
+              await supabase
+                .from("push_subscriptions")
+                .delete()
+                .eq("id", subscription.id);
+            }
+            
+            results.push({ 
+              success: false, 
+              endpoint: subscription.endpoint.substring(0, 20) + "...",
+              error: fcmResult.results?.[0]?.error 
+            });
+          }
+        } catch (fcmError) {
+          console.error("FCM request error:", fcmError);
+          results.push({ 
+            success: false, 
+            endpoint: subscription.endpoint.substring(0, 20) + "...",
+            error: String(fcmError) 
+          });
+        }
+      } else {
+        console.log("Skipping non-FCM subscription:", subscription.endpoint.substring(0, 20));
+        results.push({ 
+          success: false, 
+          endpoint: subscription.endpoint.substring(0, 20) + "...",
+          error: "Not an FCM subscription" 
+        });
+      }
+    }
+
+    const successCount = results.filter(r => r.success).length;
+    console.log(`Successfully sent ${successCount}/${subscriptions.length} notifications`);
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: "Notification queued",
+        message: `Sent ${successCount} notification(s)`,
+        results,
         subscriptionCount: subscriptions.length 
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
