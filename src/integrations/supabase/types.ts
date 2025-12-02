@@ -300,6 +300,7 @@ export type Database = {
           following_count: number | null
           full_name: string | null
           id: string
+          last_profile_update: string | null
           likes_received: number | null
           posts_count: number | null
           updated_at: string | null
@@ -313,6 +314,7 @@ export type Database = {
           following_count?: number | null
           full_name?: string | null
           id: string
+          last_profile_update?: string | null
           likes_received?: number | null
           posts_count?: number | null
           updated_at?: string | null
@@ -326,6 +328,7 @@ export type Database = {
           following_count?: number | null
           full_name?: string | null
           id?: string
+          last_profile_update?: string | null
           likes_received?: number | null
           posts_count?: number | null
           updated_at?: string | null

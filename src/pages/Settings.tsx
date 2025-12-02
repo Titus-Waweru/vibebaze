@@ -25,6 +25,9 @@ const Settings = () => {
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [lastProfileUpdate, setLastProfileUpdate] = useState<string | null>(null);
+  const [canEdit, setCanEdit] = useState(true);
+  const [daysUntilEdit, setDaysUntilEdit] = useState(0);
 
   const {
     isSubscribed,
@@ -68,6 +71,19 @@ const Settings = () => {
       setFullName(data.full_name || "");
       setBio(data.bio || "");
       setAvatarUrl(data.avatar_url);
+      setLastProfileUpdate(data.last_profile_update);
+
+      // Check if user can edit (10 days since last update)
+      if (data.last_profile_update) {
+        const lastUpdate = new Date(data.last_profile_update);
+        const now = new Date();
+        const daysDiff = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff < 10) {
+          setCanEdit(false);
+          setDaysUntilEdit(10 - daysDiff);
+        }
+      }
     } catch (error) {
       console.error("Error fetching profile:", error);
       toast.error("Failed to load profile");
@@ -131,6 +147,12 @@ const Settings = () => {
   const handleSave = async () => {
     if (!user) return;
 
+    // Check if editing is allowed
+    if (!canEdit) {
+      toast.error(`You can edit your profile again in ${daysUntilEdit} days`);
+      return;
+    }
+
     // Validate username
     if (!username.trim()) {
       toast.error("Username is required");
@@ -150,6 +172,7 @@ const Settings = () => {
           username: username.trim(),
           full_name: fullName.trim() || null,
           bio: bio.trim() || null,
+          last_profile_update: new Date().toISOString(),
         })
         .eq("id", user.id);
 
@@ -162,7 +185,7 @@ const Settings = () => {
         return;
       }
 
-      toast.success("Profile updated successfully!");
+      toast.success("Profile updated! You can edit again in 10 days.");
       navigate("/profile");
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -200,6 +223,11 @@ const Settings = () => {
         <Card className="border-border/50 shadow-card">
           <CardHeader>
             <CardTitle className="text-lg">Profile Information</CardTitle>
+            {!canEdit && (
+              <p className="text-sm text-amber-500 mt-2">
+                ⏳ You can edit your profile again in {daysUntilEdit} days
+              </p>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Avatar Upload */}
@@ -281,7 +309,7 @@ const Settings = () => {
             {/* Save Button */}
             <Button
               onClick={handleSave}
-              disabled={saving}
+              disabled={saving || !canEdit}
               className="w-full"
             >
               {saving ? (
@@ -289,7 +317,7 @@ const Settings = () => {
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              Save Changes
+              {canEdit ? "Save Changes" : `Edit in ${daysUntilEdit} days`}
             </Button>
           </CardContent>
         </Card>

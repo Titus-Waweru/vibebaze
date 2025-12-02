@@ -15,6 +15,7 @@ import Search from "./pages/Search";
 import Notifications from "./pages/Notifications";
 import Install from "./pages/Install";
 import Earnings from "./pages/Earnings";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 import { supabase } from "@/integrations/supabase/client";
 import { PermissionsSetup } from "@/components/PermissionsSetup";
@@ -70,6 +71,7 @@ const AppRoutes = () => {
       <Route path="/notifications" element={<Notifications />} />
       <Route path="/install" element={<Install />} />
       <Route path="/earnings" element={<Earnings />} />
+      <Route path="/admin" element={<AdminPanel />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
