@@ -23,11 +23,14 @@ export const usePushNotifications = (userId: string | undefined) => {
 
     if (supported && typeof Notification !== "undefined") {
       setPermission(Notification.permission);
-      if (userId) {
-        checkSubscription();
-      }
     }
-  }, [userId]);
+  }, []);
+
+  useEffect(() => {
+    if (userId && isSupported) {
+      checkSubscription();
+    }
+  }, [userId, isSupported]);
 
   // Set up foreground message listener
   useEffect(() => {

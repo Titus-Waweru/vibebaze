@@ -2,9 +2,12 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, Users, Heart, Zap, Download } from "lucide-react";
 import heroGradient from "@/assets/hero-gradient.jpg";
+import { InstallPrompt } from "@/components/InstallPrompt";
+
 const Landing = () => {
   const navigate = useNavigate();
   return <div className="min-h-screen bg-background overflow-hidden">
+      <InstallPrompt />
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Background with gradient overlay */}
