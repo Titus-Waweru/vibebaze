@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { requestFCMToken, onFCMMessage, initializeFirebase } from "@/lib/firebase";
 
-// VAPID public key for FCM
+// VAPID public key for FCM - This needs to be set in project environment variables
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 
 export const usePushNotifications = (userId: string | undefined) => {
@@ -24,6 +24,10 @@ export const usePushNotifications = (userId: string | undefined) => {
     if (supported && typeof Notification !== "undefined") {
       setPermission(Notification.permission);
     }
+    
+    // Log configuration status for debugging
+    console.log("[Push] VAPID key configured:", !!VAPID_PUBLIC_KEY);
+    console.log("[Push] Push supported:", supported);
   }, []);
 
   useEffect(() => {
@@ -38,7 +42,7 @@ export const usePushNotifications = (userId: string | undefined) => {
 
     const unsubscribe = onFCMMessage((payload) => {
       // Show toast for foreground notifications
-      const title = payload.notification?.title || payload.data?.title || "VibeSphere";
+      const title = payload.notification?.title || payload.data?.title || "VibeLoop";
       const body = payload.notification?.body || payload.data?.body || "";
       
       toast(title, {
@@ -61,7 +65,7 @@ export const usePushNotifications = (userId: string | undefined) => {
     if (!userId) return;
 
     try {
-      // Check if user has FCM token stored
+      // Check if user has any subscription stored
       const { data, error } = await supabase
         .from("push_subscriptions")
         .select("endpoint")
@@ -69,14 +73,22 @@ export const usePushNotifications = (userId: string | undefined) => {
         .limit(1);
 
       if (!error && data && data.length > 0) {
-        // Check if it's an FCM token (starts with FCM prefix pattern)
+        // Check if it's a valid FCM token (not a browser placeholder)
         const hasValidToken = data.some(sub => 
           sub.endpoint && !sub.endpoint.startsWith("browser-")
         );
-        setIsSubscribed(hasValidToken);
+        
+        // Also check if notification permission is granted
+        const permissionGranted = Notification.permission === "granted";
+        
+        console.log("[Push] Has valid token:", hasValidToken);
+        console.log("[Push] Permission granted:", permissionGranted);
+        
+        // Only show as subscribed if we have valid token AND permission
+        setIsSubscribed(hasValidToken && permissionGranted);
       }
     } catch (error) {
-      console.error("Error checking subscription:", error);
+      console.error("[Push] Error checking subscription:", error);
     }
   };
 
@@ -92,6 +104,7 @@ export const usePushNotifications = (userId: string | undefined) => {
       // Request notification permission
       const permissionResult = await Notification.requestPermission();
       setPermission(permissionResult);
+      console.log("[Push] Permission result:", permissionResult);
 
       if (permissionResult !== "granted") {
         toast.error("Please allow notifications to receive updates");
@@ -102,37 +115,33 @@ export const usePushNotifications = (userId: string | undefined) => {
       // Register Firebase service worker
       let swRegistration = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
       if (!swRegistration) {
+        console.log("[Push] Registering service worker...");
         swRegistration = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
         await navigator.serviceWorker.ready;
       }
+      console.log("[Push] Service worker ready");
 
       // Initialize Firebase and get FCM token
-      initializeFirebase();
+      const messagingInstance = initializeFirebase();
       
       if (!VAPID_PUBLIC_KEY) {
-        console.warn("VAPID_PUBLIC_KEY not configured, using fallback subscription");
-        // Fallback to simple subscription
-        const { error } = await supabase.from("push_subscriptions").upsert(
-          {
-            user_id: userId,
-            endpoint: `browser-${userId}-${Date.now()}`,
-            p256dh: "placeholder",
-            auth: "placeholder",
-          },
-          { onConflict: "user_id,endpoint" }
-        );
-        if (error) throw error;
-        setIsSubscribed(true);
-        toast.success("Notifications enabled!");
-        return true;
+        console.warn("[Push] VAPID_PUBLIC_KEY not configured");
+        toast.error("Push notifications not fully configured. Contact support.");
+        setLoading(false);
+        return false;
       }
 
+      console.log("[Push] Requesting FCM token...");
       const token = await requestFCMToken(VAPID_PUBLIC_KEY);
       
       if (!token) {
-        throw new Error("Failed to get FCM token");
+        console.error("[Push] Failed to get FCM token");
+        toast.error("Failed to enable notifications. Try again.");
+        setLoading(false);
+        return false;
       }
 
+      console.log("[Push] FCM token obtained successfully");
       setFcmToken(token);
 
       // Delete any existing subscriptions for this user first
@@ -152,10 +161,10 @@ export const usePushNotifications = (userId: string | undefined) => {
       if (error) throw error;
 
       setIsSubscribed(true);
-      toast.success("Push notifications enabled! You'll receive alerts on your device.");
+      toast.success("Push notifications enabled!");
       return true;
     } catch (error) {
-      console.error("Error subscribing to push notifications:", error);
+      console.error("[Push] Error subscribing:", error);
       toast.error("Failed to enable notifications. Please try again.");
       return false;
     } finally {
