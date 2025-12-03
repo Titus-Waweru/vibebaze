@@ -12,7 +12,7 @@ const Landing = () => {
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Background with gradient overlay */}
         <div className="absolute inset-0 z-0">
-          <img src={heroGradient} alt="VibeSphere Background" className="w-full h-full object-cover opacity-40" />
+          <img src={heroGradient} alt="VibeLoop Background" className="w-full h-full object-cover opacity-40" />
           <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
         </div>
 
@@ -25,7 +25,7 @@ const Landing = () => {
         {/* Content */}
         <div className="relative z-10 container mx-auto px-4 text-center">
           <div className="animate-fade-in">
-            <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">VibeSphere</h1>
+            <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">VibeLoop</h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Express yourself. Connect authentically. Share your vibe with the world.
             </p>
@@ -116,7 +116,7 @@ const Landing = () => {
             Ready to Share Your Vibe?
           </h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join millions of creators expressing themselves on VibeSphere
+            Join millions of creators expressing themselves on VibeLoop
           </p>
           <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-accent-glow transition-all duration-300 text-lg px-8 py-6" onClick={() => navigate("/auth?mode=signup")}>
             Create Your Account

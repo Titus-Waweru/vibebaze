@@ -68,7 +68,7 @@ const Auth = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Account created! Welcome to VibeSphere!");
+      toast.success("Account created! Welcome to VibeLoop!");
       navigate("/feed");
     }
   };
@@ -85,7 +85,7 @@ const Auth = () => {
             <Sparkles className="h-8 w-8 text-background" />
           </div>
           <CardTitle className="text-3xl bg-gradient-primary bg-clip-text text-transparent">
-            VibeSphere
+            VibeLoop
           </CardTitle>
           <CardDescription>Join the creative revolution</CardDescription>
         </CardHeader>
