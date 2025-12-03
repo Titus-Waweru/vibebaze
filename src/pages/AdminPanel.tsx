@@ -102,7 +102,7 @@ const AdminPanel = () => {
                 id="notification-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., VibeSphere Update Available!"
+                placeholder="e.g., VibeLoop Update Available!"
                 maxLength={50}
               />
             </div>

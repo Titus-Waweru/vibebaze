@@ -1,4 +1,4 @@
-// Firebase Cloud Messaging Service Worker for VibeSphere
+// Firebase Cloud Messaging Service Worker for VibeLoop
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js');
 
@@ -19,7 +19,7 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message:', payload);
 
-  const notificationTitle = payload.notification?.title || payload.data?.title || 'VibeSphere';
+  const notificationTitle = payload.notification?.title || payload.data?.title || 'VibeLoop';
   const notificationOptions = {
     body: payload.notification?.body || payload.data?.body || 'You have a new notification',
     icon: payload.notification?.icon || '/pwa-192x192.png',
@@ -31,7 +31,7 @@ messaging.onBackgroundMessage((payload) => {
       { action: 'dismiss', title: 'Dismiss' },
     ],
     requireInteraction: false,
-    tag: 'vibesphere-notification',
+    tag: 'vibeloop-notification',
     renotify: true,
   };
 
@@ -83,7 +83,7 @@ self.addEventListener('push', (event) => {
           data: data.data || {},
         };
         event.waitUntil(
-          self.registration.showNotification(data.title || 'VibeSphere', notificationOptions)
+          self.registration.showNotification(data.title || 'VibeLoop', notificationOptions)
         );
       }
     } catch (e) {

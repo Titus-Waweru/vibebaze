@@ -17,8 +17,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
-        name: "VibeSphere - Express Yourself",
-        short_name: "VibeSphere",
+        name: "VibeLoop - Express Yourself",
+        short_name: "VibeLoop",
         description: "Next-generation social platform for creative expression. Share videos, photos, audio, and thoughts.",
         theme_color: "#171717",
         background_color: "#171717",
