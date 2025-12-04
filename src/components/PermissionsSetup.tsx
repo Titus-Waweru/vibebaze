@@ -1,28 +1,30 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Bell, Check } from "lucide-react";
+import { Bell, Check, X } from "lucide-react";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { useAuth } from "@/hooks/useAuth";
 
 export const PermissionsSetup = () => {
   const [showDialog, setShowDialog] = useState(false);
   const { user } = useAuth();
-  const { isSubscribed, subscribe, isSupported } = usePushNotifications(user?.id);
+  const { isSubscribed, subscribe, isSupported, permission } = usePushNotifications(user?.id);
 
   useEffect(() => {
-    // Check if app is installed and user is authenticated
-    const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
-                       (window.navigator as any).standalone === true;
+    // Check if we've already dismissed the popup in this session
+    const hasDismissed = sessionStorage.getItem('notification_popup_dismissed');
     
-    // Check if we've already asked for permissions
-    const hasAskedForPermissions = localStorage.getItem('permissions_requested');
-    
-    if (isInstalled && user && !isSubscribed && !hasAskedForPermissions && isSupported) {
+    // Show popup if:
+    // - User is authenticated
+    // - Push is supported
+    // - Permission is "default" (not yet asked) or we haven't subscribed
+    // - User hasn't dismissed in this session
+    if (user && isSupported && permission === 'default' && !isSubscribed && !hasDismissed) {
       // Show permissions dialog after a short delay
-      setTimeout(() => setShowDialog(true), 1000);
+      const timer = setTimeout(() => setShowDialog(true), 2000);
+      return () => clearTimeout(timer);
     }
-  }, [user, isSubscribed, isSupported]);
+  }, [user, isSubscribed, isSupported, permission]);
 
   const handleEnableNotifications = async () => {
     const success = await subscribe();
@@ -33,14 +35,17 @@ export const PermissionsSetup = () => {
   };
 
   const handleSkip = () => {
-    localStorage.setItem('permissions_requested', 'true');
+    sessionStorage.setItem('notification_popup_dismissed', 'true');
     setShowDialog(false);
   };
 
   if (!showDialog) return null;
 
   return (
-    <Dialog open={showDialog} onOpenChange={setShowDialog}>
+    <Dialog open={showDialog} onOpenChange={(open) => {
+      if (!open) handleSkip();
+      setShowDialog(open);
+    }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-primary">
