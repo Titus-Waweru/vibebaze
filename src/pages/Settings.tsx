@@ -32,10 +32,13 @@ const Settings = () => {
   const {
     isSubscribed,
     isSupported,
+    permission,
     loading: notificationLoading,
     subscribe,
     unsubscribe,
   } = usePushNotifications(user?.id);
+
+  const isPermissionDenied = permission === 'denied';
 
   const handleNotificationToggle = async () => {
     if (isSubscribed) {
@@ -335,18 +338,29 @@ const Settings = () => {
               <div className="space-y-0.5">
                 <Label>Push Notifications</Label>
                 <p className="text-sm text-muted-foreground">
-                  {isSupported 
-                    ? "Get notified about new followers, likes, and posts"
-                    : "Push notifications are not supported on this device"
+                  {!isSupported 
+                    ? "Push notifications are not supported on this device"
+                    : isPermissionDenied
+                    ? "Notifications are blocked by your browser"
+                    : "Get notified about new followers, likes, and posts"
                   }
                 </p>
               </div>
               <Switch
                 checked={isSubscribed}
                 onCheckedChange={handleNotificationToggle}
-                disabled={!isSupported || notificationLoading}
+                disabled={!isSupported || notificationLoading || isPermissionDenied}
               />
             </div>
+            {isPermissionDenied && (
+              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                <p className="text-sm text-destructive font-medium mb-1">Notifications Blocked</p>
+                <p className="text-xs text-muted-foreground">
+                  To enable notifications, click the lock/info icon in your browser's address bar, 
+                  find "Notifications" and change it to "Allow", then refresh the page.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
