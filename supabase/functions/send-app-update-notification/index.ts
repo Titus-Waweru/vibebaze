@@ -188,17 +188,29 @@ serve(async (req) => {
                 title: payload.title,
                 body: payload.body,
               },
+              android: {
+                priority: "high",
+                notification: {
+                  title: payload.title,
+                  body: payload.body,
+                  icon: "ic_notification",
+                  color: "#8B5CF6",
+                },
+              },
               webpush: {
                 headers: {
                   Urgency: "high",
+                  TTL: "86400",
                 },
                 notification: {
                   title: payload.title,
                   body: payload.body,
-                  icon: "https://tgqhclcuvirakmczmqof.supabase.co/storage/v1/object/public/media/pwa-192x192.png",
-                  badge: "https://tgqhclcuvirakmczmqof.supabase.co/storage/v1/object/public/media/pwa-192x192.png",
+                  icon: "https://preview--vibesphere.lovable.app/pwa-192x192.png",
+                  badge: "https://preview--vibesphere.lovable.app/pwa-192x192.png",
                   requireInteraction: true,
-                  vibrate: [100, 50, 100],
+                  vibrate: [200, 100, 200],
+                  tag: "vibeloop-update",
+                  renotify: true,
                 },
                 fcm_options: {
                   link: "https://preview--vibesphere.lovable.app/feed",
@@ -208,6 +220,7 @@ serve(async (req) => {
                 url: "/feed",
                 title: payload.title,
                 body: payload.body,
+                click_action: "https://preview--vibesphere.lovable.app/feed",
               },
             },
           }),
