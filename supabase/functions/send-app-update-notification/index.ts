@@ -189,12 +189,19 @@ serve(async (req) => {
                 body: payload.body,
               },
               webpush: {
+                headers: {
+                  Urgency: "high",
+                },
                 notification: {
-                  icon: "/pwa-192x192.png",
-                  badge: "/pwa-192x192.png",
+                  title: payload.title,
+                  body: payload.body,
+                  icon: "https://tgqhclcuvirakmczmqof.supabase.co/storage/v1/object/public/media/pwa-192x192.png",
+                  badge: "https://tgqhclcuvirakmczmqof.supabase.co/storage/v1/object/public/media/pwa-192x192.png",
+                  requireInteraction: true,
+                  vibrate: [100, 50, 100],
                 },
                 fcm_options: {
-                  link: "/feed",
+                  link: "https://preview--vibesphere.lovable.app/feed",
                 },
               },
               data: {
