@@ -184,43 +184,31 @@ serve(async (req) => {
           body: JSON.stringify({
             message: {
               token: subscription.endpoint,
-              notification: {
-                title: payload.title,
-                body: payload.body,
-              },
-              android: {
-                priority: "high",
-                notification: {
-                  title: payload.title,
-                  body: payload.body,
-                  icon: "ic_notification",
-                  color: "#8B5CF6",
-                },
-              },
+              // Use DATA-ONLY message to ensure service worker handles display
+              // This is more reliable than notification field for web push
               webpush: {
                 headers: {
                   Urgency: "high",
                   TTL: "86400",
                 },
-                notification: {
+                fcm_options: {
+                  link: "https://preview--vibesphere.lovable.app/feed",
+                },
+                data: {
                   title: payload.title,
                   body: payload.body,
                   icon: "https://preview--vibesphere.lovable.app/pwa-192x192.png",
                   badge: "https://preview--vibesphere.lovable.app/pwa-192x192.png",
-                  requireInteraction: true,
-                  vibrate: [200, 100, 200],
-                  tag: "vibeloop-update",
-                  renotify: true,
-                },
-                fcm_options: {
-                  link: "https://preview--vibesphere.lovable.app/feed",
+                  url: "/feed",
+                  click_action: "https://preview--vibesphere.lovable.app/feed",
+                  timestamp: new Date().toISOString(),
                 },
               },
               data: {
-                url: "/feed",
                 title: payload.title,
                 body: payload.body,
-                click_action: "https://preview--vibesphere.lovable.app/feed",
+                url: "/feed",
+                icon: "https://preview--vibesphere.lovable.app/pwa-192x192.png",
               },
             },
           }),

@@ -65,31 +65,50 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Handle push events directly (fallback)
+// Handle push events directly - ALWAYS show notification
 self.addEventListener('push', (event) => {
   console.log('[firebase-messaging-sw.js] Push event received:', event);
 
   if (event.data) {
     try {
-      const data = event.data.json();
-      console.log('[firebase-messaging-sw.js] Push data:', data);
+      const payload = event.data.json();
+      console.log('[firebase-messaging-sw.js] Push data:', JSON.stringify(payload));
       
-      // Firebase messaging handles notifications with 'notification' field
-      // This fallback handles data-only messages
-      if (!data.notification) {
-        const notificationOptions = {
-          body: data.body || data.data?.body || 'You have a new notification',
-          icon: data.icon || '/pwa-192x192.png',
-          badge: '/pwa-192x192.png',
-          vibrate: [100, 50, 100],
-          data: data.data || data || {},
-        };
-        event.waitUntil(
-          self.registration.showNotification(data.title || data.data?.title || 'VibeLoop', notificationOptions)
-        );
-      }
+      // Extract notification data from various possible locations
+      const data = payload.data || payload;
+      const title = data.title || payload.notification?.title || 'VibeLoop';
+      const body = data.body || payload.notification?.body || 'You have a new notification';
+      const icon = data.icon || payload.notification?.icon || '/pwa-192x192.png';
+      
+      const notificationOptions = {
+        body: body,
+        icon: icon,
+        badge: data.badge || '/pwa-192x192.png',
+        vibrate: [200, 100, 200],
+        data: data,
+        tag: 'vibeloop-' + Date.now(),
+        renotify: true,
+        requireInteraction: true,
+        actions: [
+          { action: 'open', title: 'Open' },
+          { action: 'dismiss', title: 'Dismiss' },
+        ],
+      };
+      
+      console.log('[firebase-messaging-sw.js] Showing notification:', title, notificationOptions);
+      
+      event.waitUntil(
+        self.registration.showNotification(title, notificationOptions)
+      );
     } catch (e) {
       console.error('[firebase-messaging-sw.js] Error parsing push data:', e);
+      // Fallback notification
+      event.waitUntil(
+        self.registration.showNotification('VibeLoop', {
+          body: 'You have a new notification',
+          icon: '/pwa-192x192.png',
+        })
+      );
     }
   }
 });
