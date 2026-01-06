@@ -65,7 +65,11 @@ const PostDetail = () => {
     if (!postId) return;
     
     try {
-      await supabase.rpc("increment_view_count", { post_id: postId });
+      // Use raw SQL call since the function was just created
+      await supabase
+        .from("posts")
+        .update({ views_count: (post?.views_count || 0) + 1 })
+        .eq("id", postId);
     } catch (err) {
       // Silently fail - view count is not critical
       console.error("Failed to increment view count:", err);

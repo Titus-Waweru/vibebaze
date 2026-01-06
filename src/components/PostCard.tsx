@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Share2, Bookmark } from "lucide-react";
+import { Heart, MessageCircle, Share2, Bookmark, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import CommentSheet from "./CommentSheet";
+import VideoPlayer from "./VideoPlayer";
 
 interface PostCardProps {
   post: {
@@ -17,6 +18,7 @@ interface PostCardProps {
     thumbnail_url?: string;
     likes_count: number;
     comments_count: number;
+    views_count?: number;
     created_at: string;
     profiles?: {
       username: string;
@@ -118,10 +120,32 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
     }
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     const url = `${window.location.origin}/post/${post.id}`;
+    
+    // Try native share API first (mobile)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Post by ${post.profiles?.username || 'User'}`,
+          text: post.caption || 'Check out this post!',
+          url: url,
+        });
+        return;
+      } catch (err) {
+        // User cancelled or share failed, fall back to clipboard
+      }
+    }
+    
+    // Fallback to clipboard
     navigator.clipboard.writeText(url);
     toast.success("Link copied to clipboard!");
+  };
+
+  const handleCopyLink = () => {
+    const url = `${window.location.origin}/post/${post.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Direct link copied!");
   };
 
   const handleProfileClick = () => {
@@ -137,21 +161,35 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
       <div className="bg-card border border-border rounded-3xl overflow-hidden shadow-card hover:shadow-glow transition-all duration-300 animate-fade-in">
         {/* Header */}
         <div
-          className="p-4 flex items-center gap-3 cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={handleProfileClick}
+          className="p-4 flex items-center justify-between"
         >
-          <Avatar className="h-10 w-10 ring-2 ring-primary/20">
-            <AvatarImage src={post.profiles?.avatar_url} />
-            <AvatarFallback className="bg-gradient-primary text-background">
-              {post.profiles?.username?.[0]?.toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-semibold text-foreground">{post.profiles?.username || "Unknown"}</p>
-            <p className="text-xs text-muted-foreground">
-              {new Date(post.created_at).toLocaleDateString()}
-            </p>
+          <div 
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={handleProfileClick}
+          >
+            <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+              <AvatarImage src={post.profiles?.avatar_url} />
+              <AvatarFallback className="bg-gradient-primary text-background">
+                {post.profiles?.username?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-semibold text-foreground">{post.profiles?.username || "Unknown"}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(post.created_at).toLocaleDateString()}
+              </p>
+            </div>
           </div>
+          
+          {/* Direct link button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleCopyLink}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+          >
+            <Link2 className="h-4 w-4" />
+          </Button>
         </div>
 
         {/* Media */}
@@ -165,15 +203,13 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
           </div>
         )}
         {post.type === "video" && post.media_url && (
-          <div className="relative w-full bg-black">
-            <video
-              src={post.media_url}
-              controls
-              className="w-full max-h-[600px] object-contain"
-              playsInline
-              preload="metadata"
-            />
-          </div>
+          <VideoPlayer
+            src={post.media_url}
+            postId={post.id}
+            likesCount={likesCount}
+            commentsCount={commentsCount}
+            viewsCount={post.views_count}
+          />
         )}
         {post.type === "audio" && post.media_url && (
           <div className="p-8 bg-gradient-to-br from-primary/10 to-accent/10">
