@@ -4,10 +4,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
-import { Loader2 } from "lucide-react";
+import { Loader2, Play, Grid, ChevronRight } from "lucide-react";
 import FollowButton from "@/components/FollowButton";
 import FollowListModal from "@/components/FollowListModal";
+
+const PREVIEW_LIMIT = 6; // Show only 6 posts in preview
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -16,13 +20,13 @@ const UserProfile = () => {
   const [profile, setProfile] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAllPosts, setShowAllPosts] = useState(false);
   const [followModal, setFollowModal] = useState<{ open: boolean; type: "followers" | "following" }>({
     open: false,
     type: "followers",
   });
 
   useEffect(() => {
-    // If viewing own profile, redirect to /profile
     if (user && userId === user.id) {
       navigate("/profile");
       return;
@@ -73,6 +77,10 @@ const UserProfile = () => {
   const openFollowingModal = () => {
     setFollowModal({ open: true, type: "following" });
   };
+
+  const displayedPosts = showAllPosts ? posts : posts.slice(0, PREVIEW_LIMIT);
+  const hasMorePosts = posts.length > PREVIEW_LIMIT;
+  const videoCount = posts.filter(p => p.type === "video").length;
 
   if (loading || !profile) {
     return (
@@ -144,41 +152,94 @@ const UserProfile = () => {
 
             {/* Posts Grid */}
             <div className="mt-8 border-t border-border pt-8">
-              <h3 className="text-lg font-semibold mb-4">Posts</h3>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Grid className="h-5 w-5 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold">Posts</h3>
+                  {videoCount > 0 && (
+                    <Badge variant="secondary" className="ml-2">
+                      <Play className="h-3 w-3 mr-1" />
+                      {videoCount} videos
+                    </Badge>
+                  )}
+                </div>
+                {!showAllPosts && hasMorePosts && (
+                  <span className="text-sm text-muted-foreground">
+                    Showing {PREVIEW_LIMIT} of {posts.length}
+                  </span>
+                )}
+              </div>
+              
               {posts.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   No public posts yet.
                 </p>
               ) : (
-                <div className="grid grid-cols-3 gap-2">
-                  {posts.map((post) => (
-                    <div
-                      key={post.id}
-                      className="aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => navigate(`/post/${post.id}`)}
-                    >
-                      {post.media_url ? (
-                        post.type === "video" ? (
-                          <video
-                            src={post.media_url}
-                            className="w-full h-full object-cover"
-                            muted
-                          />
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    {displayedPosts.map((post) => (
+                      <div
+                        key={post.id}
+                        className="aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity relative group"
+                        onClick={() => navigate(`/post/${post.id}`)}
+                      >
+                        {post.media_url ? (
+                          post.type === "video" ? (
+                            <>
+                              <video
+                                src={post.media_url}
+                                className="w-full h-full object-cover"
+                                muted
+                              />
+                              {/* Video indicator overlay */}
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/40 transition-colors">
+                                <div className="w-10 h-10 rounded-full bg-white/80 flex items-center justify-center">
+                                  <Play className="h-5 w-5 text-black ml-0.5" fill="currentColor" />
+                                </div>
+                              </div>
+                              {/* Video badge */}
+                              <div className="absolute top-2 right-2">
+                                <Badge variant="secondary" className="text-xs px-1.5 py-0.5 bg-black/60 text-white border-0">
+                                  <Play className="h-2.5 w-2.5" fill="currentColor" />
+                                </Badge>
+                              </div>
+                            </>
+                          ) : (
+                            <img
+                              src={post.media_url}
+                              alt="Post"
+                              className="w-full h-full object-cover"
+                            />
+                          )
                         ) : (
-                          <img
-                            src={post.media_url}
-                            alt="Post"
-                            className="w-full h-full object-cover"
-                          />
-                        )
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center p-2 bg-gradient-secondary">
-                          <p className="text-xs text-foreground line-clamp-3">{post.caption}</p>
-                        </div>
-                      )}
+                          <div className="w-full h-full flex items-center justify-center p-2 bg-gradient-secondary">
+                            <p className="text-xs text-foreground line-clamp-3">{post.caption}</p>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* Show All / Show Less Button */}
+                  {hasMorePosts && (
+                    <div className="mt-6 text-center">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowAllPosts(!showAllPosts)}
+                        className="w-full max-w-xs"
+                      >
+                        {showAllPosts ? (
+                          "Show Less"
+                        ) : (
+                          <>
+                            View All {posts.length} Posts
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                          </>
+                        )}
+                      </Button>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </div>
           </CardContent>
