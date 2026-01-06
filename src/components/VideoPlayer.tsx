@@ -1,0 +1,129 @@
+import { useRef, useEffect, useState } from "react";
+import { useVideoPlayback } from "@/contexts/VideoPlaybackContext";
+import { Badge } from "@/components/ui/badge";
+import { Play, Flame, TrendingUp, Sparkles, Eye } from "lucide-react";
+
+interface VideoPlayerProps {
+  src: string;
+  postId: string;
+  likesCount?: number;
+  commentsCount?: number;
+  viewsCount?: number;
+  className?: string;
+}
+
+type VideoBadge = {
+  label: string;
+  icon: React.ReactNode;
+  variant: "trending" | "hot" | "new" | "popular";
+};
+
+const getVideoBadge = (likes: number, comments: number, views: number): VideoBadge | null => {
+  const engagement = likes + (comments * 2) + (views * 0.1);
+  
+  if (engagement >= 500) {
+    return { label: "Trending", icon: <TrendingUp className="h-3 w-3" />, variant: "trending" };
+  } else if (engagement >= 200) {
+    return { label: "Hot", icon: <Flame className="h-3 w-3" />, variant: "hot" };
+  } else if (engagement >= 50) {
+    return { label: "Popular", icon: <Sparkles className="h-3 w-3" />, variant: "popular" };
+  } else if (likes < 10 && views < 50) {
+    return { label: "New", icon: <Eye className="h-3 w-3" />, variant: "new" };
+  }
+  return null;
+};
+
+const VideoPlayer = ({ 
+  src, 
+  postId, 
+  likesCount = 0, 
+  commentsCount = 0, 
+  viewsCount = 0,
+  className = "" 
+}: VideoPlayerProps) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const { setCurrentlyPlaying, registerVideo, unregisterVideo } = useVideoPlayback();
+  
+  const badge = getVideoBadge(likesCount, commentsCount, viewsCount);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const pauseVideo = () => {
+      video.pause();
+      setIsPlaying(false);
+    };
+
+    registerVideo(postId, pauseVideo);
+
+    return () => {
+      unregisterVideo(postId);
+    };
+  }, [postId, registerVideo, unregisterVideo]);
+
+  const handlePlay = () => {
+    setCurrentlyPlaying(postId);
+    setIsPlaying(true);
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+  };
+
+  const handleClick = () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (video.paused) {
+      setCurrentlyPlaying(postId);
+      video.play();
+    } else {
+      video.pause();
+    }
+  };
+
+  return (
+    <div className={`relative w-full bg-black group ${className}`}>
+      {/* Video Badge */}
+      {badge && (
+        <div className="absolute top-3 left-3 z-10">
+          <Badge 
+            variant={badge.variant}
+            className="flex items-center gap-1 shadow-lg animate-fade-in"
+          >
+            {badge.icon}
+            {badge.label}
+          </Badge>
+        </div>
+      )}
+
+      {/* Play Overlay when paused */}
+      {!isPlaying && (
+        <div 
+          className="absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer z-10 transition-opacity group-hover:bg-black/30"
+          onClick={handleClick}
+        >
+          <div className="w-16 h-16 rounded-full bg-primary/80 backdrop-blur-sm flex items-center justify-center shadow-glow animate-scale-in">
+            <Play className="h-8 w-8 text-primary-foreground ml-1" fill="currentColor" />
+          </div>
+        </div>
+      )}
+
+      <video
+        ref={videoRef}
+        src={src}
+        className="w-full max-h-[600px] object-contain cursor-pointer"
+        playsInline
+        preload="metadata"
+        onClick={handleClick}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        controls={isPlaying}
+      />
+    </div>
+  );
+};
+
+export default VideoPlayer;
