@@ -2,6 +2,8 @@ import { useRef, useEffect, useState } from "react";
 import { useVideoPlayback } from "@/contexts/VideoPlaybackContext";
 import { Badge } from "@/components/ui/badge";
 import { Play, Flame, TrendingUp, Sparkles, Eye } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface VideoPlayerProps {
   src: string;
@@ -33,6 +35,16 @@ const getVideoBadge = (likes: number, comments: number, views: number): VideoBad
   return null;
 };
 
+// Get or create session ID for anonymous users
+const getSessionId = (): string => {
+  let sessionId = sessionStorage.getItem("vibeloop_session_id");
+  if (!sessionId) {
+    sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    sessionStorage.setItem("vibeloop_session_id", sessionId);
+  }
+  return sessionId;
+};
+
 const VideoPlayer = ({ 
   src, 
   postId, 
@@ -43,7 +55,9 @@ const VideoPlayer = ({
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [viewRecorded, setViewRecorded] = useState(false);
   const { setCurrentlyPlaying, registerVideo, unregisterVideo } = useVideoPlayback();
+  const { user } = useAuth();
   
   const badge = getVideoBadge(likesCount, commentsCount, viewsCount);
 
@@ -62,6 +76,35 @@ const VideoPlayer = ({
       unregisterVideo(postId);
     };
   }, [postId, registerVideo, unregisterVideo]);
+
+  // Track view after 3 seconds of watching
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || viewRecorded) return;
+
+    const handleTimeUpdate = async () => {
+      if (viewRecorded) return;
+      
+      // Record view after 3 seconds of watching
+      if (video.currentTime >= 3) {
+        setViewRecorded(true);
+        
+        try {
+          await supabase.rpc("record_content_view", {
+            p_post_id: postId,
+            p_user_id: user?.id || null,
+            p_session_id: user?.id ? null : getSessionId(),
+            p_watch_duration: Math.floor(video.currentTime),
+          });
+        } catch (error) {
+          console.error("Error recording view:", error);
+        }
+      }
+    };
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
+  }, [postId, user?.id, viewRecorded]);
 
   const handlePlay = () => {
     setCurrentlyPlaying(postId);
