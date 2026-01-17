@@ -95,6 +95,95 @@ export type Database = {
           },
         ]
       }
+      content_views: {
+        Row: {
+          counted_at: string | null
+          created_at: string
+          id: string
+          ip_hash: string | null
+          is_counted: boolean
+          post_id: string
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+          watch_duration_seconds: number
+        }
+        Insert: {
+          counted_at?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          is_counted?: boolean
+          post_id: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          watch_duration_seconds?: number
+        }
+        Update: {
+          counted_at?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string | null
+          is_counted?: boolean
+          post_id?: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          watch_duration_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_subscriptions: {
+        Row: {
+          amount: number
+          auto_renew: boolean
+          cancelled_at: string | null
+          created_at: string
+          creator_id: string
+          currency: string
+          expires_at: string | null
+          id: string
+          started_at: string
+          status: string
+          subscriber_id: string
+        }
+        Insert: {
+          amount: number
+          auto_renew?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          creator_id: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          subscriber_id: string
+        }
+        Update: {
+          amount?: number
+          auto_renew?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          creator_id?: string
+          currency?: string
+          expires_at?: string | null
+          id?: string
+          started_at?: string
+          status?: string
+          subscriber_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string | null
@@ -231,6 +320,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       posts: {
         Row: {
@@ -407,6 +526,71 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          amount: number
+          completed_at: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          net_amount: number
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          payment_reference: string | null
+          platform_fee: number
+          post_id: string | null
+          receiver_id: string | null
+          sender_id: string | null
+          status: Database["public"]["Enums"]["wallet_transaction_status"]
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Insert: {
+          amount: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          net_amount: number
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_reference?: string | null
+          platform_fee?: number
+          post_id?: string | null
+          receiver_id?: string | null
+          sender_id?: string | null
+          status?: Database["public"]["Enums"]["wallet_transaction_status"]
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+        }
+        Update: {
+          amount?: number
+          completed_at?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          net_amount?: number
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          payment_reference?: string | null
+          platform_fee?: number
+          post_id?: string | null
+          receiver_id?: string | null
+          sender_id?: string | null
+          status?: Database["public"]["Enums"]["wallet_transaction_status"]
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -436,6 +620,107 @@ export type Database = {
           },
         ]
       }
+      wallets: {
+        Row: {
+          available_balance: number
+          bank_account_name: string | null
+          bank_account_number: string | null
+          bank_name: string | null
+          created_at: string
+          currency: string
+          id: string
+          is_verified: boolean
+          lifetime_earnings: number
+          mpesa_phone: string | null
+          pending_balance: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_balance?: number
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_verified?: boolean
+          lifetime_earnings?: number
+          mpesa_phone?: string | null
+          pending_balance?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_balance?: number
+          bank_account_name?: string | null
+          bank_account_number?: string | null
+          bank_name?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          is_verified?: boolean
+          lifetime_earnings?: number
+          mpesa_phone?: string | null
+          pending_balance?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      withdrawals: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          failure_reason: string | null
+          id: string
+          payment_details: Json
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          processed_at: string | null
+          processed_by: string | null
+          status: Database["public"]["Enums"]["wallet_transaction_status"]
+          transaction_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          failure_reason?: string | null
+          id?: string
+          payment_details?: Json
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: Database["public"]["Enums"]["wallet_transaction_status"]
+          transaction_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          failure_reason?: string | null
+          id?: string
+          payment_details?: Json
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          processed_at?: string | null
+          processed_by?: string | null
+          status?: Database["public"]["Enums"]["wallet_transaction_status"]
+          transaction_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "withdrawals_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -449,10 +734,32 @@ export type Database = {
         Returns: boolean
       }
       increment_view_count: { Args: { post_id: string }; Returns: undefined }
+      record_content_view: {
+        Args: {
+          p_post_id: string
+          p_session_id?: string
+          p_user_id?: string
+          p_watch_duration?: number
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      payment_method: "mpesa" | "bank_transfer" | "paypal" | "stripe"
       post_type: "video" | "image" | "audio" | "text"
+      transaction_type:
+        | "tip"
+        | "subscription"
+        | "content_purchase"
+        | "withdrawal"
+        | "platform_fee"
+        | "earnings"
+      wallet_transaction_status:
+        | "pending"
+        | "completed"
+        | "failed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -581,7 +888,22 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      payment_method: ["mpesa", "bank_transfer", "paypal", "stripe"],
       post_type: ["video", "image", "audio", "text"],
+      transaction_type: [
+        "tip",
+        "subscription",
+        "content_purchase",
+        "withdrawal",
+        "platform_fee",
+        "earnings",
+      ],
+      wallet_transaction_status: [
+        "pending",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
     },
   },
 } as const
