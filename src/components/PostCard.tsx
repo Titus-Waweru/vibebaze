@@ -7,6 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import CommentSheet from "./CommentSheet";
 import VideoPlayer from "./VideoPlayer";
+import TipButton from "./TipButton";
+import { useWallet } from "@/hooks/useWallet";
 
 interface PostCardProps {
   post: {
@@ -36,6 +38,10 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
   const [isSaved, setIsSaved] = useState(false);
   const [commentSheetOpen, setCommentSheetOpen] = useState(false);
   const navigate = useNavigate();
+  const { sendTip } = useWallet(currentUserId);
+
+  // Check if this is the user's own post (don't show tip button)
+  const isOwnPost = currentUserId === post.user_id;
 
   useEffect(() => {
     if (currentUserId) {
@@ -254,6 +260,15 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
               <Button variant="ghost" size="sm" onClick={handleShare} className="hover:text-accent">
                 <Share2 className="h-6 w-6" />
               </Button>
+              {/* Tip Button - only show for other users' posts */}
+              {!isOwnPost && currentUserId && (
+                <TipButton
+                  creatorId={post.user_id}
+                  creatorUsername={post.profiles?.username || "user"}
+                  postId={post.id}
+                  onTip={(amount) => sendTip(post.user_id, amount, post.id)}
+                />
+              )}
             </div>
             <Button
               variant="ghost"

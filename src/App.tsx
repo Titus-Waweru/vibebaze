@@ -17,6 +17,7 @@ import Install from "./pages/Install";
 import Earnings from "./pages/Earnings";
 import AdminPanel from "./pages/AdminPanel";
 import PostDetail from "./pages/PostDetail";
+import Wallet from "./pages/Wallet";
 import NotFound from "./pages/NotFound";
 import { supabase } from "@/integrations/supabase/client";
 import { PermissionsSetup } from "@/components/PermissionsSetup";
@@ -74,6 +75,7 @@ const AppRoutes = () => {
       <Route path="/earnings" element={<Earnings />} />
       <Route path="/admin" element={<AdminPanel />} />
       <Route path="/post/:postId" element={<PostDetail />} />
+      <Route path="/wallet" element={<Wallet />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
