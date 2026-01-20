@@ -11,7 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, Bell, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save } from "lucide-react";
+import { PhoneNumberModal } from "@/components/PhoneNumberModal";
+import { ArrowLeft, Bell, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save, Phone, FileText, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 const Settings = () => {
@@ -25,9 +26,11 @@ const Settings = () => {
   const [fullName, setFullName] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
   const [lastProfileUpdate, setLastProfileUpdate] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(true);
   const [daysUntilEdit, setDaysUntilEdit] = useState(0);
+  const [showPhoneModal, setShowPhoneModal] = useState(false);
 
   const {
     isSubscribed,
@@ -74,6 +77,7 @@ const Settings = () => {
       setFullName(data.full_name || "");
       setBio(data.bio || "");
       setAvatarUrl(data.avatar_url);
+      setPhoneNumber(data.phone_number);
       setLastProfileUpdate(data.last_profile_update);
 
       // Check if user can edit (10 days since last update)
@@ -273,8 +277,9 @@ const Settings = () => {
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username"
+                placeholder="Choose a unique username..."
                 maxLength={30}
+                className="placeholder:text-muted-foreground/50"
               />
               <p className="text-xs text-muted-foreground">
                 This is how others will find and mention you
@@ -288,8 +293,9 @@ const Settings = () => {
                 id="fullName"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your full name"
+                placeholder="Your display name (optional)..."
                 maxLength={50}
+                className="placeholder:text-muted-foreground/50"
               />
             </div>
 
@@ -300,9 +306,10 @@ const Settings = () => {
                 id="bio"
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell us about yourself..."
+                placeholder="Share a bit about yourself..."
                 maxLength={160}
                 rows={4}
+                className="placeholder:text-muted-foreground/50"
               />
               <p className="text-xs text-muted-foreground text-right">
                 {bio.length}/160
@@ -322,6 +329,44 @@ const Settings = () => {
               )}
               {canEdit ? "Save Changes" : `Edit in ${daysUntilEdit} days`}
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Phone Number (Kenya) */}
+        <Card className="border-border/50 shadow-card mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Phone className="h-5 w-5" />
+              M-PESA Phone Number
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {phoneNumber ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-green-500/20">
+                    <Phone className="h-4 w-4 text-green-500" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">{phoneNumber}</p>
+                    <p className="text-sm text-muted-foreground">Ready for M-PESA transactions</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setShowPhoneModal(true)}>
+                  Change
+                </Button>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-muted-foreground mb-4">
+                  Add your Kenyan phone number (+254) to receive tips and withdraw earnings via M-PESA.
+                </p>
+                <Button onClick={() => setShowPhoneModal(true)} className="gap-2">
+                  <Phone className="h-4 w-4" />
+                  Add Phone Number
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -409,7 +454,51 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Legal Links */}
+        <Card className="border-border/50 shadow-card mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Legal
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Button
+              variant="ghost"
+              className="w-full justify-between"
+              onClick={() => navigate("/terms")}
+            >
+              <span className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Terms & Conditions
+              </span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-between"
+              onClick={() => navigate("/privacy")}
+            >
+              <span className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Privacy Policy
+              </span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Phone Number Modal */}
+      {user && (
+        <PhoneNumberModal
+          open={showPhoneModal}
+          onOpenChange={setShowPhoneModal}
+          userId={user.id}
+          onSuccess={fetchProfile}
+        />
+      )}
     </div>
   );
 };

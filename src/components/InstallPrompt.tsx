@@ -11,32 +11,50 @@ interface BeforeInstallPromptEvent extends Event {
 export const InstallPrompt = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
-    // Check if already installed
-    const isInstalled = window.matchMedia('(display-mode: standalone)').matches ||
-                       (window.navigator as any).standalone === true;
-    
-    if (isInstalled) {
+    // Check if already installed using multiple methods
+    const checkInstalled = () => {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isIOSStandalone = (window.navigator as any).standalone === true;
+      // Also check if running in PWA context
+      const isInPWA = window.matchMedia('(display-mode: fullscreen)').matches ||
+                      window.matchMedia('(display-mode: minimal-ui)').matches;
+      return isStandalone || isIOSStandalone || isInPWA;
+    };
+
+    const installed = checkInstalled();
+    setIsInstalled(installed);
+
+    // Don't show any install prompts if already installed
+    if (installed) {
+      console.log("[InstallPrompt] App is already installed, hiding prompt");
+      return;
+    }
+
+    // Check if user has dismissed before in this session
+    const hasDismissed = sessionStorage.getItem('install_prompt_dismissed');
+    if (hasDismissed) {
       return;
     }
 
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      // Show prompt immediately after a short delay
-      setTimeout(() => setShowPrompt(true), 1000);
+      // Show prompt after a short delay
+      setTimeout(() => setShowPrompt(true), 2000);
     };
 
     window.addEventListener("beforeinstallprompt", handler);
 
-    // For browsers that don't support beforeinstallprompt
-    if (!window.matchMedia('(display-mode: standalone)').matches) {
-      setTimeout(() => setShowPrompt(true), 1000);
-    }
-
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
+
+  // Don't render anything if installed
+  if (isInstalled) {
+    return null;
+  }
 
   const handleInstall = async () => {
     if (deferredPrompt) {
@@ -44,15 +62,17 @@ export const InstallPrompt = () => {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === "accepted") {
         setDeferredPrompt(null);
+        setIsInstalled(true);
       }
     } else {
-      // For iOS or browsers without support, show manual instructions
+      // For iOS or browsers without support, redirect to install page
       window.location.href = "/install";
     }
     setShowPrompt(false);
   };
 
   const handleDismiss = () => {
+    sessionStorage.setItem('install_prompt_dismissed', 'true');
     setShowPrompt(false);
   };
 
@@ -72,7 +92,7 @@ export const InstallPrompt = () => {
           </div>
           <DialogTitle className="text-center text-2xl">Install VibeLoop</DialogTitle>
           <DialogDescription className="text-center text-base pt-2">
-            Get the full app experience with offline access, push notifications, and faster loading!
+            Get the full African-first creator experience with offline access, push notifications, and faster loading!
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 pt-4">
