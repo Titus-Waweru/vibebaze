@@ -421,6 +421,7 @@ export type Database = {
           id: string
           last_profile_update: string | null
           likes_received: number | null
+          phone_number: string | null
           posts_count: number | null
           updated_at: string | null
           username: string
@@ -435,6 +436,7 @@ export type Database = {
           id: string
           last_profile_update?: string | null
           likes_received?: number | null
+          phone_number?: string | null
           posts_count?: number | null
           updated_at?: string | null
           username: string
@@ -449,6 +451,7 @@ export type Database = {
           id?: string
           last_profile_update?: string | null
           likes_received?: number | null
+          phone_number?: string | null
           posts_count?: number | null
           updated_at?: string | null
           username?: string
