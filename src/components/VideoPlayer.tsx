@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { useVideoPlayback } from "@/contexts/VideoPlaybackContext";
 import { Badge } from "@/components/ui/badge";
 import { Play, Flame, TrendingUp, Sparkles, Eye } from "lucide-react";
@@ -54,28 +54,66 @@ const VideoPlayer = ({
   className = "" 
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [viewRecorded, setViewRecorded] = useState(false);
-  const { setCurrentlyPlaying, registerVideo, unregisterVideo } = useVideoPlayback();
+  const [isVisible, setIsVisible] = useState(false);
+  const { setCurrentlyPlaying, registerVideo, unregisterVideo, currentlyPlayingId } = useVideoPlayback();
   const { user } = useAuth();
   
   const badge = getVideoBadge(likesCount, commentsCount, viewsCount);
 
-  useEffect(() => {
+  // Pause video function for context
+  const pauseVideo = useCallback(() => {
     const video = videoRef.current;
-    if (!video) return;
-
-    const pauseVideo = () => {
+    if (video && !video.paused) {
       video.pause();
+      video.currentTime = 0; // Reset to beginning
       setIsPlaying(false);
-    };
+    }
+  }, []);
 
+  // Register/unregister with context
+  useEffect(() => {
     registerVideo(postId, pauseVideo);
-
     return () => {
       unregisterVideo(postId);
     };
-  }, [postId, registerVideo, unregisterVideo]);
+  }, [postId, registerVideo, unregisterVideo, pauseVideo]);
+
+  // IntersectionObserver for scroll-based play/pause - TikTok-like behavior
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const isNowVisible = entry.isIntersecting && entry.intersectionRatio >= 0.5;
+          setIsVisible(isNowVisible);
+
+          if (isNowVisible) {
+            // This video is now visible - pause all others and play this one
+            setCurrentlyPlaying(postId);
+          }
+        });
+      },
+      {
+        threshold: [0.5], // Trigger when 50% visible
+        rootMargin: "-10% 0px -10% 0px", // Add some margin
+      }
+    );
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [postId, setCurrentlyPlaying]);
+
+  // Auto-pause when another video becomes current
+  useEffect(() => {
+    if (currentlyPlayingId !== postId && isPlaying) {
+      pauseVideo();
+    }
+  }, [currentlyPlayingId, postId, isPlaying, pauseVideo]);
 
   // Track view after 3 seconds of watching
   useEffect(() => {
@@ -128,7 +166,7 @@ const VideoPlayer = ({
   };
 
   return (
-    <div className={`relative w-full bg-black group ${className}`}>
+    <div ref={containerRef} className={`relative w-full bg-black group ${className}`}>
       {/* Video Badge */}
       {badge && (
         <div className="absolute top-3 left-3 z-10">
@@ -163,7 +201,9 @@ const VideoPlayer = ({
         onClick={handleClick}
         onPlay={handlePlay}
         onPause={handlePause}
+        onEnded={pauseVideo}
         controls={isPlaying}
+        muted={false}
       />
     </div>
   );
