@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_logs: {
+        Row: {
+          action_type: string
+          admin_id: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          new_value: Json | null
+          old_value: Json | null
+          reason: string | null
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action_type: string
+          admin_id: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       comment_likes: {
         Row: {
           comment_id: string
@@ -91,6 +130,81 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_flags: {
+        Row: {
+          action_notes: string | null
+          action_taken: Database["public"]["Enums"]["moderation_action"] | null
+          ai_category: string | null
+          ai_confidence: number | null
+          comment_id: string | null
+          created_at: string
+          description: string | null
+          flagged_by: string | null
+          id: string
+          post_id: string | null
+          reason: Database["public"]["Enums"]["report_reason"]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: Database["public"]["Enums"]["flag_source"]
+          status: Database["public"]["Enums"]["moderation_status"]
+          urgency_level: number | null
+          user_id: string | null
+        }
+        Insert: {
+          action_notes?: string | null
+          action_taken?: Database["public"]["Enums"]["moderation_action"] | null
+          ai_category?: string | null
+          ai_confidence?: number | null
+          comment_id?: string | null
+          created_at?: string
+          description?: string | null
+          flagged_by?: string | null
+          id?: string
+          post_id?: string | null
+          reason: Database["public"]["Enums"]["report_reason"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source: Database["public"]["Enums"]["flag_source"]
+          status?: Database["public"]["Enums"]["moderation_status"]
+          urgency_level?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          action_notes?: string | null
+          action_taken?: Database["public"]["Enums"]["moderation_action"] | null
+          ai_category?: string | null
+          ai_confidence?: number | null
+          comment_id?: string | null
+          created_at?: string
+          description?: string | null
+          flagged_by?: string | null
+          id?: string
+          post_id?: string | null
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: Database["public"]["Enums"]["flag_source"]
+          status?: Database["public"]["Enums"]["moderation_status"]
+          urgency_level?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_flags_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_flags_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]
@@ -493,6 +607,33 @@ export type Database = {
           },
         ]
       }
+      rate_limits: {
+        Row: {
+          action_count: number
+          action_type: string
+          created_at: string
+          id: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          action_count?: number
+          action_type: string
+          created_at?: string
+          id?: string
+          user_id: string
+          window_start?: string
+        }
+        Update: {
+          action_count?: number
+          action_type?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       saved_posts: {
         Row: {
           created_at: string | null
@@ -594,6 +735,118 @@ export type Database = {
           },
         ]
       }
+      user_moderation: {
+        Row: {
+          banned_at: string | null
+          banned_by: string | null
+          banned_reason: string | null
+          created_at: string
+          id: string
+          is_banned: boolean
+          is_suspended: boolean
+          last_warning_at: string | null
+          suspended_by: string | null
+          suspended_until: string | null
+          suspension_reason: string | null
+          updated_at: string
+          user_id: string
+          warning_count: number
+        }
+        Insert: {
+          banned_at?: string | null
+          banned_by?: string | null
+          banned_reason?: string | null
+          created_at?: string
+          id?: string
+          is_banned?: boolean
+          is_suspended?: boolean
+          last_warning_at?: string | null
+          suspended_by?: string | null
+          suspended_until?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          user_id: string
+          warning_count?: number
+        }
+        Update: {
+          banned_at?: string | null
+          banned_by?: string | null
+          banned_reason?: string | null
+          created_at?: string
+          id?: string
+          is_banned?: boolean
+          is_suspended?: boolean
+          last_warning_at?: string | null
+          suspended_by?: string | null
+          suspended_until?: string | null
+          suspension_reason?: string | null
+          updated_at?: string
+          user_id?: string
+          warning_count?: number
+        }
+        Relationships: []
+      }
+      user_reports: {
+        Row: {
+          content_flag_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_comment_id: string | null
+          reported_post_id: string | null
+          reported_user_id: string | null
+          reporter_id: string
+          status: Database["public"]["Enums"]["moderation_status"]
+        }
+        Insert: {
+          content_flag_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reported_comment_id?: string | null
+          reported_post_id?: string | null
+          reported_user_id?: string | null
+          reporter_id: string
+          status?: Database["public"]["Enums"]["moderation_status"]
+        }
+        Update: {
+          content_flag_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reported_comment_id?: string | null
+          reported_post_id?: string | null
+          reported_user_id?: string | null
+          reporter_id?: string
+          status?: Database["public"]["Enums"]["moderation_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_reports_content_flag_id_fkey"
+            columns: ["content_flag_id"]
+            isOneToOne: false
+            referencedRelation: "content_flags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reports_reported_comment_id_fkey"
+            columns: ["reported_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reports_reported_post_id_fkey"
+            columns: ["reported_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -631,7 +884,11 @@ export type Database = {
           bank_name: string | null
           created_at: string
           currency: string
+          frozen_at: string | null
+          frozen_by: string | null
+          frozen_reason: string | null
           id: string
+          is_frozen: boolean
           is_verified: boolean
           lifetime_earnings: number
           mpesa_phone: string | null
@@ -646,7 +903,11 @@ export type Database = {
           bank_name?: string | null
           created_at?: string
           currency?: string
+          frozen_at?: string | null
+          frozen_by?: string | null
+          frozen_reason?: string | null
           id?: string
+          is_frozen?: boolean
           is_verified?: boolean
           lifetime_earnings?: number
           mpesa_phone?: string | null
@@ -661,7 +922,11 @@ export type Database = {
           bank_name?: string | null
           created_at?: string
           currency?: string
+          frozen_at?: string | null
+          frozen_by?: string | null
+          frozen_reason?: string | null
           id?: string
+          is_frozen?: boolean
           is_verified?: boolean
           lifetime_earnings?: number
           mpesa_phone?: string | null
@@ -729,6 +994,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_rate_limit: {
+        Args: {
+          p_action_type: string
+          p_max_actions: number
+          p_user_id: string
+          p_window_hours?: number
+        }
+        Returns: boolean
+      }
+      check_wallet_balance: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -736,7 +1014,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_rate_limit: {
+        Args: { p_action_type: string; p_user_id: string }
+        Returns: undefined
+      }
       increment_view_count: { Args: { post_id: string }; Returns: undefined }
+      process_transfer: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_post_id?: string
+          p_receiver_id: string
+          p_sender_id: string
+          p_transaction_type?: Database["public"]["Enums"]["transaction_type"]
+        }
+        Returns: string
+      }
       record_content_view: {
         Args: {
           p_post_id: string
@@ -749,8 +1042,27 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      flag_source: "ai_moderation" | "user_report" | "admin_flag"
+      moderation_action:
+        | "warning"
+        | "content_removal"
+        | "temporary_suspension"
+        | "permanent_ban"
+        | "wallet_freeze"
+        | "wallet_unfreeze"
+        | "none"
+      moderation_status: "pending" | "reviewed" | "actioned" | "dismissed"
       payment_method: "mpesa" | "bank_transfer" | "paypal" | "stripe"
       post_type: "video" | "image" | "audio" | "text"
+      report_reason:
+        | "nudity"
+        | "violence"
+        | "harassment"
+        | "hate_speech"
+        | "scam_fraud"
+        | "spam"
+        | "misinformation"
+        | "other"
       transaction_type:
         | "tip"
         | "subscription"
@@ -891,8 +1203,29 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      flag_source: ["ai_moderation", "user_report", "admin_flag"],
+      moderation_action: [
+        "warning",
+        "content_removal",
+        "temporary_suspension",
+        "permanent_ban",
+        "wallet_freeze",
+        "wallet_unfreeze",
+        "none",
+      ],
+      moderation_status: ["pending", "reviewed", "actioned", "dismissed"],
       payment_method: ["mpesa", "bank_transfer", "paypal", "stripe"],
       post_type: ["video", "image", "audio", "text"],
+      report_reason: [
+        "nudity",
+        "violence",
+        "harassment",
+        "hate_speech",
+        "scam_fraud",
+        "spam",
+        "misinformation",
+        "other",
+      ],
       transaction_type: [
         "tip",
         "subscription",
