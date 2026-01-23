@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, Bell, Loader2, Send, Shield, Flag, Users, Activity } from "lucide-react";
+import { ArrowLeft, Bell, Loader2, Send, Shield, Flag, Users, Activity, LayoutDashboard, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,8 @@ import AdminModerationTab from "@/components/admin/AdminModerationTab";
 import AdminReportsTab from "@/components/admin/AdminReportsTab";
 import AdminUsersTab from "@/components/admin/AdminUsersTab";
 import AdminLogsTab from "@/components/admin/AdminLogsTab";
+import AdminWalletsTab from "@/components/admin/AdminWalletsTab";
+import AdminDashboardTab from "@/components/admin/AdminDashboardTab";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -143,8 +145,12 @@ const AdminPanel = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="moderation" className="space-y-6">
-          <TabsList className="grid grid-cols-5 w-full">
+        <Tabs defaultValue="dashboard" className="space-y-6">
+          <TabsList className="grid grid-cols-7 w-full">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
             <TabsTrigger value="moderation" className="flex items-center gap-2">
               <Flag className="h-4 w-4" />
               <span className="hidden sm:inline">Moderation</span>
@@ -157,6 +163,10 @@ const AdminPanel = () => {
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Users</span>
             </TabsTrigger>
+            <TabsTrigger value="wallets" className="flex items-center gap-2">
+              <Wallet className="h-4 w-4" />
+              <span className="hidden sm:inline">Wallets</span>
+            </TabsTrigger>
             <TabsTrigger value="logs" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
               <span className="hidden sm:inline">Logs</span>
@@ -166,6 +176,10 @@ const AdminPanel = () => {
               <span className="hidden sm:inline">Notify</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard">
+            <AdminDashboardTab />
+          </TabsContent>
 
           <TabsContent value="moderation">
             <AdminModerationTab />
@@ -177,6 +191,10 @@ const AdminPanel = () => {
 
           <TabsContent value="users">
             <AdminUsersTab />
+          </TabsContent>
+
+          <TabsContent value="wallets">
+            <AdminWalletsTab />
           </TabsContent>
 
           <TabsContent value="logs">
