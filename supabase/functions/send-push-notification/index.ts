@@ -158,6 +158,13 @@ serve(async (req) => {
     const fcmEndpoint = `https://fcm.googleapis.com/v1/projects/${fcmProjectId}/messages:send`;
     console.log("[Push] Using FCM endpoint:", fcmEndpoint);
 
+    // Base URL for absolute asset URLs - critical for mobile lock screen notifications
+    const baseUrl = "https://vbeloop.lovable.app";
+    const absoluteIcon = icon?.startsWith("http") ? icon : `${baseUrl}/pwa-192x192.png`;
+    const absoluteBadge = `${baseUrl}/pwa-192x192.png`;
+    const clickUrl = data?.url || "/notifications";
+    const absoluteClickUrl = clickUrl.startsWith("http") ? clickUrl : `${baseUrl}${clickUrl}`;
+
     const results: { success: boolean; endpoint: string; error?: string }[] = [];
 
     for (const subscription of subscriptions) {
@@ -165,6 +172,7 @@ serve(async (req) => {
       
       if (isFCM) {
         // Send via Firebase Cloud Messaging HTTP v1 API
+        // CRITICAL: Using data-only payload for reliable service worker handling
         try {
           console.log("[Push] Sending to FCM token:", subscription.endpoint.substring(0, 20) + "...");
           
@@ -177,31 +185,47 @@ serve(async (req) => {
             body: JSON.stringify({
               message: {
                 token: subscription.endpoint,
-                notification: {
-                  title,
-                  body,
-                },
+                // Using DATA-ONLY payload - NO notification field!
+                // This ensures service worker always handles and displays the notification
+                // Works reliably on mobile lock screens when app is closed
                 webpush: {
-                  notification: {
-                    icon: icon || "/pwa-192x192.png",
-                    badge: "/pwa-192x192.png",
-                    vibrate: [100, 50, 100],
+                  headers: {
+                    Urgency: "high",
+                    TTL: "86400", // 24 hours
                   },
                   fcm_options: {
-                    link: data?.url || "/notifications",
+                    link: absoluteClickUrl,
+                  },
+                  // Data in webpush.data for service worker
+                  data: {
+                    title: title,
+                    body: body,
+                    icon: absoluteIcon,
+                    badge: absoluteBadge,
+                    url: absoluteClickUrl,
+                    click_action: absoluteClickUrl,
+                    timestamp: new Date().toISOString(),
                   },
                 },
                 android: {
                   priority: "high",
-                  notification: {
-                    sound: "default",
+                  ttl: "86400s",
+                  // Data-only on Android too
+                  data: {
+                    title: title,
+                    body: body,
+                    icon: absoluteIcon,
+                    url: absoluteClickUrl,
                   },
                 },
+                // Top-level data for all platforms
                 data: {
+                  title: title,
+                  body: body,
+                  icon: absoluteIcon,
+                  badge: absoluteBadge,
+                  url: absoluteClickUrl,
                   ...data,
-                  title,
-                  body,
-                  url: data?.url || "/notifications",
                 },
               },
             }),

@@ -2,3 +2,9 @@ project_id = "tgqhclcuvirakmczmqof"
 
 [functions.send-push-notification]
 verify_jwt = false
+
+[functions.trigger-push-notification]
+verify_jwt = false
+
+[functions.send-app-update-notification]
+verify_jwt = false
