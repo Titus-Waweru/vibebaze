@@ -24,6 +24,13 @@ interface NotificationPayload {
   old_record: null;
 }
 
+// Normalize private key - handle escaped newlines from environment variables
+function normalizePrivateKey(key: string): string {
+  let normalized = key.replace(/\\n/g, '\n');
+  normalized = normalized.replace(/\\\\n/g, '\n');
+  return normalized;
+}
+
 // Base64URL encode
 function base64UrlEncode(data: Uint8Array | string): string {
   const base64 = typeof data === 'string' 
@@ -34,6 +41,8 @@ function base64UrlEncode(data: Uint8Array | string): string {
 
 // Get OAuth2 access token using service account credentials
 async function getAccessToken(clientEmail: string, privateKey: string): Promise<string> {
+  console.log("[FCM Auth] Starting OAuth2 token generation");
+  
   const now = Math.floor(Date.now() / 1000);
   const expiry = now + 3600;
 
@@ -51,21 +60,39 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const signInput = `${encodedHeader}.${encodedPayload}`;
 
-  const pemContents = privateKey
-    .replace(/\\n/g, '\n')
+  // Normalize and parse PEM private key
+  const normalizedKey = normalizePrivateKey(privateKey);
+  const pemContents = normalizedKey
     .replace('-----BEGIN PRIVATE KEY-----', '')
     .replace('-----END PRIVATE KEY-----', '')
-    .replace(/\s/g, '');
+    .replace(/[\r\n\s]/g, '');
 
-  const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
+  let binaryKey: ArrayBuffer;
+  try {
+    const decoded = atob(pemContents);
+    binaryKey = new ArrayBuffer(decoded.length);
+    const view = new Uint8Array(binaryKey);
+    for (let i = 0; i < decoded.length; i++) {
+      view[i] = decoded.charCodeAt(i);
+    }
+  } catch (e) {
+    console.error("[FCM Auth] Failed to decode base64 PEM:", e);
+    throw new Error("Invalid private key format");
+  }
 
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    binaryKey,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+  let cryptoKey: CryptoKey;
+  try {
+    cryptoKey = await crypto.subtle.importKey(
+      'pkcs8',
+      binaryKey,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+  } catch (e) {
+    console.error("[FCM Auth] Failed to import crypto key:", e);
+    throw new Error("Invalid private key format: " + String(e));
+  }
 
   const signature = await crypto.subtle.sign(
     'RSASSA-PKCS1-v1_5',
@@ -86,9 +113,11 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
 
   const tokenData = await tokenResponse.json();
   if (!tokenResponse.ok) {
+    console.error("[FCM Auth] Token exchange failed:", tokenData);
     throw new Error(`Token exchange failed: ${JSON.stringify(tokenData)}`);
   }
 
+  console.log("[FCM Auth] Access token obtained");
   return tokenData.access_token;
 }
 
