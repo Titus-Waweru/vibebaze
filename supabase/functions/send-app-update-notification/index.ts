@@ -12,6 +12,15 @@ interface NotificationPayload {
   adminSecret: string;
 }
 
+// Normalize private key - handle escaped newlines from environment variables
+function normalizePrivateKey(key: string): string {
+  // Replace literal \n with actual newlines
+  let normalized = key.replace(/\\n/g, '\n');
+  // Also handle double-escaped newlines
+  normalized = normalized.replace(/\\\\n/g, '\n');
+  return normalized;
+}
+
 // Base64URL encode
 function base64UrlEncode(data: Uint8Array | string): string {
   const base64 = typeof data === 'string' 
@@ -22,6 +31,10 @@ function base64UrlEncode(data: Uint8Array | string): string {
 
 // Get OAuth2 access token using service account credentials
 async function getAccessToken(clientEmail: string, privateKey: string): Promise<string> {
+  console.log("[FCM Auth] Starting OAuth2 token generation");
+  console.log("[FCM Auth] Client email:", clientEmail);
+  console.log("[FCM Auth] Private key length:", privateKey?.length || 0);
+  
   const now = Math.floor(Date.now() / 1000);
   const expiry = now + 3600; // 1 hour
 
@@ -43,22 +56,45 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const signInput = `${encodedHeader}.${encodedPayload}`;
 
-  // Parse PEM private key
-  const pemContents = privateKey
-    .replace(/\\n/g, '\n')
+  // Normalize and parse PEM private key
+  const normalizedKey = normalizePrivateKey(privateKey);
+  console.log("[FCM Auth] Key starts with BEGIN:", normalizedKey.includes('-----BEGIN PRIVATE KEY-----'));
+  
+  const pemContents = normalizedKey
     .replace('-----BEGIN PRIVATE KEY-----', '')
     .replace('-----END PRIVATE KEY-----', '')
-    .replace(/\s/g, '');
+    .replace(/[\r\n\s]/g, '');
 
-  const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
+  console.log("[FCM Auth] PEM content length after cleanup:", pemContents.length);
 
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    binaryKey,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+  let binaryKey: ArrayBuffer;
+  try {
+    const decoded = atob(pemContents);
+    binaryKey = new ArrayBuffer(decoded.length);
+    const view = new Uint8Array(binaryKey);
+    for (let i = 0; i < decoded.length; i++) {
+      view[i] = decoded.charCodeAt(i);
+    }
+    console.log("[FCM Auth] Binary key created, length:", decoded.length);
+  } catch (e) {
+    console.error("[FCM Auth] Failed to decode base64 PEM:", e);
+    throw new Error("Invalid private key format - base64 decode failed");
+  }
+
+  let cryptoKey: CryptoKey;
+  try {
+    cryptoKey = await crypto.subtle.importKey(
+      'pkcs8',
+      binaryKey,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+    console.log("[FCM Auth] CryptoKey imported successfully");
+  } catch (e) {
+    console.error("[FCM Auth] Failed to import crypto key:", e);
+    throw new Error("Invalid private key format - crypto import failed: " + String(e));
+  }
 
   const signature = await crypto.subtle.sign(
     'RSASSA-PKCS1-v1_5',
@@ -67,8 +103,10 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
   );
 
   const jwt = `${signInput}.${base64UrlEncode(new Uint8Array(signature))}`;
+  console.log("[FCM Auth] JWT created, length:", jwt.length);
 
   // Exchange JWT for access token
+  console.log("[FCM Auth] Exchanging JWT for access token...");
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -81,9 +119,11 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
   const tokenData = await tokenResponse.json();
   
   if (!tokenResponse.ok) {
+    console.error("[FCM Auth] Token exchange failed:", tokenData);
     throw new Error(`Token exchange failed: ${JSON.stringify(tokenData)}`);
   }
 
+  console.log("[FCM Auth] Access token obtained successfully");
   return tokenData.access_token;
 }
 
