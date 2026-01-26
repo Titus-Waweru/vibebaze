@@ -144,21 +144,53 @@ export const usePushNotifications = (userId: string | undefined) => {
       console.log("[Push] FCM token obtained successfully");
       setFcmToken(token);
 
-      // Delete any existing subscriptions for this user first
-      await supabase
+      // UPSERT: Delete existing and insert new in a transaction-safe way
+      // First try to upsert by deleting then inserting
+      console.log("[Push] Saving FCM token to database...");
+      
+      // Use upsert pattern: delete first, then insert
+      const { error: deleteError } = await supabase
         .from("push_subscriptions")
         .delete()
         .eq("user_id", userId);
+      
+      if (deleteError) {
+        console.warn("[Push] Delete warning (non-fatal):", deleteError);
+      }
 
-      // Save FCM token to database
-      const { error } = await supabase.from("push_subscriptions").insert({
+      // Small delay to ensure delete completes
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Now insert the new token
+      const { error: insertError } = await supabase.from("push_subscriptions").insert({
         user_id: userId,
         endpoint: token, // Store FCM token as endpoint
         p256dh: "fcm", // Marker to identify as FCM
         auth: "fcm",
       });
 
-      if (error) throw error;
+      // If insert fails with conflict, try update instead
+      if (insertError?.code === "23505" || insertError?.message?.includes("duplicate") || insertError?.message?.includes("409")) {
+        console.log("[Push] Conflict detected, attempting update...");
+        const { error: updateError } = await supabase
+          .from("push_subscriptions")
+          .update({
+            endpoint: token,
+            p256dh: "fcm",
+            auth: "fcm",
+          })
+          .eq("user_id", userId);
+        
+        if (updateError) {
+          console.error("[Push] Update also failed:", updateError);
+          throw updateError;
+        }
+        console.log("[Push] Token updated successfully via fallback");
+      } else if (insertError) {
+        throw insertError;
+      } else {
+        console.log("[Push] Token inserted successfully");
+      }
 
       setIsSubscribed(true);
       toast.success("Push notifications enabled!");
