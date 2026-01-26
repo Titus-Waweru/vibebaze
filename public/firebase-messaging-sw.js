@@ -1,8 +1,28 @@
-// Firebase Cloud Messaging Service Worker for VibeLoop
+/**
+ * Firebase Cloud Messaging Service Worker for VibeLoop
+ * 
+ * SECURITY NOTE:
+ * This service worker contains ONLY public Firebase configuration values.
+ * These are CLIENT-SIDE publishable keys, NOT secrets.
+ * - API Key: Publishable key for client identification (not a secret)
+ * - Project ID: Public project identifier
+ * - Messaging Sender ID: Public identifier for Cloud Messaging
+ * 
+ * Private credentials (FCM_PRIVATE_KEY, FCM_CLIENT_EMAIL) are stored
+ * securely in backend environment secrets and used ONLY in edge functions.
+ * 
+ * To update these values:
+ * 1. Go to Firebase Console > Project Settings > General
+ * 2. Copy the values from "Your apps" > Web app configuration
+ * 3. Update the corresponding VITE_FIREBASE_* environment variables
+ * 4. Update this file to match
+ */
+
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js');
 
-// Firebase configuration - must match the app's config
+// PUBLIC Firebase configuration - these are publishable keys (not secrets)
+// These values must match the VITE_FIREBASE_* environment variables
 firebase.initializeApp({
   apiKey: "AIzaSyAGuVmPvFk2n17zEPtw2ps5HtpJf6oQ3yY",
   authDomain: "vibesphere-5e17c.firebaseapp.com",
