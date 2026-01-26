@@ -29,11 +29,11 @@ function base64UrlEncode(data: Uint8Array | string): string {
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Get OAuth2 access token using service account credentials
+// Get OAuth2 access token using Firebase service account credentials
+// SECURITY: All credentials read from environment secrets only - never log credential values
 async function getAccessToken(clientEmail: string, privateKey: string): Promise<string> {
   console.log("[FCM Auth] Starting OAuth2 token generation");
-  console.log("[FCM Auth] Client email:", clientEmail);
-  console.log("[FCM Auth] Private key length:", privateKey?.length || 0);
+  // SECURITY: Do not log private key details
   
   const now = Math.floor(Date.now() / 1000);
   const expiry = now + 3600; // 1 hour

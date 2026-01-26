@@ -14,6 +14,14 @@ interface PushPayload {
   data?: Record<string, string>;
 }
 
+// Normalize private key - handle escaped newlines from environment variables
+// SECURITY: This function processes secrets from environment, never log the key content
+function normalizePrivateKey(key: string): string {
+  let normalized = key.replace(/\\n/g, '\n');
+  normalized = normalized.replace(/\\\\n/g, '\n');
+  return normalized;
+}
+
 // Base64URL encode
 function base64UrlEncode(data: Uint8Array | string): string {
   const base64 = typeof data === 'string' 
@@ -22,16 +30,15 @@ function base64UrlEncode(data: Uint8Array | string): string {
   return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Get OAuth2 access token using service account credentials
+// Get OAuth2 access token using Firebase service account credentials
+// SECURITY: All credentials read from environment secrets only
 async function getAccessToken(clientEmail: string, privateKey: string): Promise<string> {
+  console.log("[FCM Auth] Starting OAuth2 token generation");
+  
   const now = Math.floor(Date.now() / 1000);
-  const expiry = now + 3600; // 1 hour
+  const expiry = now + 3600;
 
-  const header = {
-    alg: 'RS256',
-    typ: 'JWT',
-  };
-
+  const header = { alg: 'RS256', typ: 'JWT' };
   const payload = {
     iss: clientEmail,
     sub: clientEmail,
@@ -45,22 +52,39 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const signInput = `${encodedHeader}.${encodedPayload}`;
 
-  // Parse PEM private key
-  const pemContents = privateKey
-    .replace(/\\n/g, '\n')
+  // Normalize and parse PEM private key from environment secret
+  const normalizedKey = normalizePrivateKey(privateKey);
+  const pemContents = normalizedKey
     .replace('-----BEGIN PRIVATE KEY-----', '')
     .replace('-----END PRIVATE KEY-----', '')
-    .replace(/\s/g, '');
+    .replace(/[\r\n\s]/g, '');
 
-  const binaryKey = Uint8Array.from(atob(pemContents), c => c.charCodeAt(0));
+  let binaryKey: ArrayBuffer;
+  try {
+    const decoded = atob(pemContents);
+    binaryKey = new ArrayBuffer(decoded.length);
+    const view = new Uint8Array(binaryKey);
+    for (let i = 0; i < decoded.length; i++) {
+      view[i] = decoded.charCodeAt(i);
+    }
+  } catch (e) {
+    console.error("[FCM Auth] Failed to decode private key");
+    throw new Error("Invalid private key format");
+  }
 
-  const cryptoKey = await crypto.subtle.importKey(
-    'pkcs8',
-    binaryKey,
-    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
+  let cryptoKey: CryptoKey;
+  try {
+    cryptoKey = await crypto.subtle.importKey(
+      'pkcs8',
+      binaryKey,
+      { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
+  } catch (e) {
+    console.error("[FCM Auth] Failed to import crypto key");
+    throw new Error("Invalid private key format");
+  }
 
   const signature = await crypto.subtle.sign(
     'RSASSA-PKCS1-v1_5',
@@ -70,7 +94,6 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
 
   const jwt = `${signInput}.${base64UrlEncode(new Uint8Array(signature))}`;
 
-  // Exchange JWT for access token
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -83,9 +106,11 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
   const tokenData = await tokenResponse.json();
   
   if (!tokenResponse.ok) {
-    throw new Error(`Token exchange failed: ${JSON.stringify(tokenData)}`);
+    console.error("[FCM Auth] Token exchange failed");
+    throw new Error("FCM authentication failed");
   }
 
+  console.log("[FCM Auth] Access token obtained successfully");
   return tokenData.access_token;
 }
 
