@@ -5,8 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PostCard from "@/components/PostCard";
 import Navbar from "@/components/Navbar";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageCircle, Sparkles, Users, Flame } from "lucide-react";
 import { VideoPlaybackProvider } from "@/contexts/VideoPlaybackContext";
+import { Button } from "@/components/ui/button";
 
 // Calculate engagement score for ranking
 const calculateEngagementScore = (post: any): number => {
@@ -188,12 +189,38 @@ const Feed = () => {
       <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
         <Navbar />
         
-        <div className="container mx-auto px-4 pt-6 max-w-2xl">
+        {/* Fixed Top Header - Mobile */}
+        <div className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b border-border md:hidden">
+          <div className="flex items-center justify-between px-4 h-14">
+            <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              VibeBaze
+            </h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/messages")}
+              className="relative hover:bg-primary/10"
+            >
+              <MessageCircle className="h-6 w-6" />
+            </Button>
+          </div>
+        </div>
+        
+        <div className="container mx-auto px-4 pt-16 md:pt-6 max-w-2xl">
           <Tabs defaultValue="foryou" className="w-full" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 mb-6 bg-card/50 backdrop-blur-sm">
-              <TabsTrigger value="foryou">For You</TabsTrigger>
-              <TabsTrigger value="following">Following</TabsTrigger>
-              <TabsTrigger value="trending">Trending</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-3 mb-6 bg-card/50 backdrop-blur-sm sticky top-14 md:top-20 z-30">
+              <TabsTrigger value="foryou" className="gap-1.5 data-[state=active]:bg-primary/20">
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden xs:inline">Vibes</span>
+              </TabsTrigger>
+              <TabsTrigger value="following" className="gap-1.5 data-[state=active]:bg-primary/20">
+                <Users className="h-4 w-4" />
+                <span className="hidden xs:inline">Circle</span>
+              </TabsTrigger>
+              <TabsTrigger value="trending" className="gap-1.5 data-[state=active]:bg-primary/20">
+                <Flame className="h-4 w-4" />
+                <span className="hidden xs:inline">Hot</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="foryou" className="space-y-6">
@@ -203,7 +230,7 @@ const Feed = () => {
                 </div>
               ) : forYouPosts.length === 0 ? (
                 <div className="text-center py-20">
-                  <p className="text-muted-foreground">No posts yet. Be the first to create one!</p>
+                  <p className="text-muted-foreground">No vibes yet. Be the first to drop one!</p>
                 </div>
               ) : (
                 forYouPosts.map((post) => (
@@ -219,7 +246,7 @@ const Feed = () => {
                 </div>
               ) : followingPosts.length === 0 ? (
                 <div className="text-center py-20">
-                  <p className="text-muted-foreground">Follow users to see their posts here</p>
+                  <p className="text-muted-foreground">Build your circle to see their vibes here</p>
                 </div>
               ) : (
                 followingPosts.map((post) => (
@@ -235,7 +262,7 @@ const Feed = () => {
                 </div>
               ) : trendingPosts.length === 0 ? (
                 <div className="text-center py-20">
-                  <p className="text-muted-foreground">No trending posts yet</p>
+                  <p className="text-muted-foreground">No hot vibes yet</p>
                 </div>
               ) : (
                 trendingPosts.map((post) => (

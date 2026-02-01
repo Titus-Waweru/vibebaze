@@ -4,10 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search as SearchIcon, Hash, Loader2 } from "lucide-react";
+import { Search as SearchIcon, Hash, Loader2, MessageCircle, Users, FileText } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 
 type SearchTab = "users" | "hashtags" | "posts";
 
@@ -108,13 +109,30 @@ const Search = () => {
     <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
       <Navbar />
       
-      <div className="container mx-auto px-4 pt-6 max-w-2xl">
+      {/* Fixed Top Header - Mobile */}
+      <div className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b border-border md:hidden">
+        <div className="flex items-center justify-between px-4 h-14">
+          <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+            Discover
+          </h1>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/messages")}
+            className="relative hover:bg-primary/10"
+          >
+            <MessageCircle className="h-6 w-6" />
+          </Button>
+        </div>
+      </div>
+      
+      <div className="container mx-auto px-4 pt-16 md:pt-6 max-w-2xl">
         {/* Search Input */}
-        <div className="relative mb-6">
+        <div className="relative mb-6 sticky top-14 md:top-20 z-30 bg-background py-2">
           <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search users, hashtags, posts..."
+            placeholder="Find creators, vibes, hashtags..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -124,9 +142,18 @@ const Search = () => {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as SearchTab)}>
           <TabsList className="grid w-full grid-cols-3 mb-6">
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="hashtags">Hashtags</TabsTrigger>
-            <TabsTrigger value="posts">Posts</TabsTrigger>
+            <TabsTrigger value="users" className="gap-1.5">
+              <Users className="h-4 w-4" />
+              <span>Creators</span>
+            </TabsTrigger>
+            <TabsTrigger value="hashtags" className="gap-1.5">
+              <Hash className="h-4 w-4" />
+              <span>Tags</span>
+            </TabsTrigger>
+            <TabsTrigger value="posts" className="gap-1.5">
+              <FileText className="h-4 w-4" />
+              <span>Vibes</span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Users Tab */}
@@ -137,11 +164,11 @@ const Search = () => {
               </div>
             ) : !searchQuery ? (
               <div className="text-center py-20">
-                <p className="text-muted-foreground">Start typing to search users</p>
+                <p className="text-muted-foreground">Find your favorite creators</p>
               </div>
             ) : users.length === 0 ? (
               <div className="text-center py-20">
-                <p className="text-muted-foreground">No users found</p>
+                <p className="text-muted-foreground">No creators found</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -184,11 +211,11 @@ const Search = () => {
               </div>
             ) : !searchQuery ? (
               <div className="text-center py-20">
-                <p className="text-muted-foreground">Start typing to search hashtags</p>
+                <p className="text-muted-foreground">Explore trending tags</p>
               </div>
             ) : hashtags.length === 0 ? (
               <div className="text-center py-20">
-                <p className="text-muted-foreground">No hashtags found</p>
+                <p className="text-muted-foreground">No tags found</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -223,11 +250,11 @@ const Search = () => {
               </div>
             ) : !searchQuery ? (
               <div className="text-center py-20">
-                <p className="text-muted-foreground">Start typing to search posts</p>
+                <p className="text-muted-foreground">Discover amazing vibes</p>
               </div>
             ) : posts.length === 0 ? (
               <div className="text-center py-20">
-                <p className="text-muted-foreground">No posts found</p>
+                <p className="text-muted-foreground">No vibes found</p>
               </div>
             ) : (
               <div className="space-y-4">
