@@ -256,6 +256,48 @@ export type Database = {
           },
         ]
       }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string | null
+          participant_one: string
+          participant_two: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          participant_one: string
+          participant_two: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          participant_one?: string
+          participant_two?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_participant_one_fkey"
+            columns: ["participant_one"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_participant_two_fkey"
+            columns: ["participant_two"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_subscriptions: {
         Row: {
           amount: number
@@ -364,6 +406,123 @@ export type Database = {
           {
             foreignKeyName: "likes_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_queue: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          encrypted_content: string
+          encrypted_key_receiver: string
+          encrypted_key_sender: string
+          id: string
+          nonce: string
+          processed_at: string | null
+          retry_count: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          encrypted_content: string
+          encrypted_key_receiver: string
+          encrypted_key_sender: string
+          id?: string
+          nonce: string
+          processed_at?: string | null
+          retry_count?: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          encrypted_content?: string
+          encrypted_key_receiver?: string
+          encrypted_key_sender?: string
+          id?: string
+          nonce?: string
+          processed_at?: string | null
+          retry_count?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_queue_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          delivered_at: string | null
+          encrypted_content: string
+          encrypted_key_receiver: string
+          encrypted_key_sender: string
+          id: string
+          is_read: boolean
+          message_type: string
+          nonce: string
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          delivered_at?: string | null
+          encrypted_content: string
+          encrypted_key_receiver: string
+          encrypted_key_sender: string
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          nonce: string
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          encrypted_content?: string
+          encrypted_key_receiver?: string
+          encrypted_key_sender?: string
+          id?: string
+          is_read?: boolean
+          message_type?: string
+          nonce?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -735,6 +894,44 @@ export type Database = {
           },
         ]
       }
+      user_encryption_keys: {
+        Row: {
+          created_at: string
+          encrypted_private_key: string
+          id: string
+          key_salt: string
+          public_key: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_private_key: string
+          id?: string
+          key_salt: string
+          public_key: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_private_key?: string
+          id?: string
+          key_salt?: string
+          public_key?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_encryption_keys_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_moderation: {
         Row: {
           banned_at: string | null
@@ -1006,6 +1203,10 @@ export type Database = {
       check_wallet_balance: {
         Args: { p_amount: number; p_user_id: string }
         Returns: boolean
+      }
+      get_or_create_conversation: {
+        Args: { p_user_one: string; p_user_two: string }
+        Returns: string
       }
       has_role: {
         Args: {

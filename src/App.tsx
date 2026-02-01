@@ -13,6 +13,7 @@ import Settings from "./pages/Settings";
 import UserProfile from "./pages/UserProfile";
 import Search from "./pages/Search";
 import Notifications from "./pages/Notifications";
+import Messages from "./pages/Messages";
 import Install from "./pages/Install";
 import Earnings from "./pages/Earnings";
 import AdminPanel from "./pages/AdminPanel";
@@ -73,6 +74,7 @@ const AppRoutes = () => {
       <Route path="/user/:userId" element={<UserProfile />} />
       <Route path="/search" element={<Search />} />
       <Route path="/notifications" element={<Notifications />} />
+      <Route path="/messages" element={<Messages />} />
       <Route path="/install" element={<Install />} />
       <Route path="/earnings" element={<Earnings />} />
       <Route path="/admin" element={<AdminPanel />} />
