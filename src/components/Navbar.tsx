@@ -1,4 +1,4 @@
-import { Home, Search, PlusCircle, Bell, User, Download, MessageCircle } from "lucide-react";
+import { Home, Search, PlusCircle, Bell, User, Download } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -90,15 +90,6 @@ const Navbar = () => {
               <PlusCircle className="h-6 w-6" />
               <span className="hidden md:inline ml-2">Create</span>
             </Button>
-
-            <NavLink
-              to="/messages"
-              className="flex flex-col md:flex-row items-center gap-1 md:gap-2 px-4 py-2 rounded-lg transition-all duration-200"
-              activeClassName="text-primary"
-            >
-              <MessageCircle className="h-6 w-6" />
-              <span className="text-xs md:text-sm">Messages</span>
-            </NavLink>
 
             <NavLink
               to="/notifications"
