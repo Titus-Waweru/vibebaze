@@ -14,7 +14,7 @@ const Landing = () => {
       <section className="relative min-h-screen flex items-center justify-center">
         {/* Background with gradient overlay */}
         <div className="absolute inset-0 z-0">
-          <img src={heroGradient} alt="VibeLoop Background" className="w-full h-full object-cover opacity-40" />
+          <img src={heroGradient} alt="VibeBaze Background" className="w-full h-full object-cover opacity-40" />
           <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
         </div>
 
@@ -33,7 +33,7 @@ const Landing = () => {
               <span className="text-sm font-medium text-primary">Africa's Creator Platform 🌍</span>
             </div>
             
-            <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">VibeLoop</h1>
+            <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">VibeBaze</h1>
             <p className="text-xl md:text-2xl text-muted-foreground mb-4 max-w-2xl mx-auto">
               Express yourself. Connect authentically. Earn from your creativity.
             </p>
@@ -92,7 +92,7 @@ const Landing = () => {
       <section className="py-20 px-4">
         <div className="container mx-auto">
           <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 bg-gradient-primary bg-clip-text text-transparent">
-            Why African Creators Choose VibeLoop
+            Why African Creators Choose VibeBaze
           </h2>
           <p className="text-center text-muted-foreground mb-16 max-w-2xl mx-auto">
             No international payment barriers. Withdraw directly to M-PESA. Built with Africa in mind.
@@ -130,7 +130,7 @@ const Landing = () => {
             Ready to Share Your Vibe?
           </h2>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Join thousands of African creators already earning on VibeLoop
+            Join thousands of African creators already earning on VibeBaze
           </p>
           <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-accent-glow transition-all duration-300 text-lg px-8 py-6" onClick={() => navigate("/auth?mode=signup")}>
             Create Your Account
