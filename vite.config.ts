@@ -17,9 +17,9 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "robots.txt"],
       manifest: {
-        name: "VibeLoop - Express Yourself",
-        short_name: "VibeLoop",
-        description: "Next-generation social platform for creative expression. Share videos, photos, audio, and thoughts.",
+        name: "VibeBaze - Africa's Creator Platform",
+        short_name: "VibeBaze",
+        description: "Africa's premier creator platform. Share videos, photos, and earn with M-PESA.",
         theme_color: "#171717",
         background_color: "#171717",
         display: "standalone",
@@ -46,7 +46,8 @@ export default defineConfig(({ mode }) => ({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        globPatterns: ["**/*.{js,css,html,ico,svg,woff2}"],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3MB limit
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
