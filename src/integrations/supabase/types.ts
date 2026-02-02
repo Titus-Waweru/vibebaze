@@ -624,6 +624,44 @@ export type Database = {
         }
         Relationships: []
       }
+      point_claims: {
+        Row: {
+          created_at: string
+          id: string
+          kes_amount: number
+          points_claimed: number
+          processed_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kes_amount: number
+          points_claimed: number
+          processed_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kes_amount?: number
+          points_claimed?: number
+          processed_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "point_claims_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           caption: string | null
@@ -696,6 +734,7 @@ export type Database = {
           likes_received: number | null
           phone_number: string | null
           posts_count: number | null
+          referral_code: string | null
           updated_at: string | null
           username: string
         }
@@ -711,6 +750,7 @@ export type Database = {
           likes_received?: number | null
           phone_number?: string | null
           posts_count?: number | null
+          referral_code?: string | null
           updated_at?: string | null
           username: string
         }
@@ -726,6 +766,7 @@ export type Database = {
           likes_received?: number | null
           phone_number?: string | null
           posts_count?: number | null
+          referral_code?: string | null
           updated_at?: string | null
           username?: string
         }
@@ -792,6 +833,54 @@ export type Database = {
           window_start?: string
         }
         Relationships: []
+      }
+      referrals: {
+        Row: {
+          created_at: string
+          id: string
+          points_awarded: number
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          status: string
+          validated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_awarded?: number
+          referral_code: string
+          referred_id: string
+          referrer_id: string
+          status?: string
+          validated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_awarded?: number
+          referral_code?: string
+          referred_id?: string
+          referrer_id?: string
+          status?: string
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       saved_posts: {
         Row: {
@@ -1090,8 +1179,11 @@ export type Database = {
           lifetime_earnings: number
           mpesa_phone: string | null
           pending_balance: number
+          pending_points: number
+          total_points_claimed: number
           updated_at: string
           user_id: string
+          vibe_points: number
         }
         Insert: {
           available_balance?: number
@@ -1109,8 +1201,11 @@ export type Database = {
           lifetime_earnings?: number
           mpesa_phone?: string | null
           pending_balance?: number
+          pending_points?: number
+          total_points_claimed?: number
           updated_at?: string
           user_id: string
+          vibe_points?: number
         }
         Update: {
           available_balance?: number
@@ -1128,8 +1223,11 @@ export type Database = {
           lifetime_earnings?: number
           mpesa_phone?: string | null
           pending_balance?: number
+          pending_points?: number
+          total_points_claimed?: number
           updated_at?: string
           user_id?: string
+          vibe_points?: number
         }
         Relationships: []
       }
@@ -1204,6 +1302,10 @@ export type Database = {
         Args: { p_amount: number; p_user_id: string }
         Returns: boolean
       }
+      claim_points: {
+        Args: { p_points: number; p_user_id: string }
+        Returns: string
+      }
       get_or_create_conversation: {
         Args: { p_user_one: string; p_user_two: string }
         Returns: string
@@ -1240,6 +1342,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_referral: { Args: { p_referred_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
