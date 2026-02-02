@@ -75,19 +75,22 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute top-10 right-10 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-float" />
-      <div className="absolute bottom-10 left-10 w-64 h-64 bg-accent/20 rounded-full blur-3xl animate-float" style={{ animationDelay: "1.5s" }} />
-
-      <Card className="w-full max-w-md relative z-10 border-border/50 shadow-card backdrop-blur-sm bg-card/95">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 bg-gradient-primary rounded-2xl w-16 h-16 flex items-center justify-center">
-            <Sparkles className="h-8 w-8 text-background" />
+      {/* Premium background effects */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/15 rounded-full blur-[120px] animate-float" />
+      <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent/15 rounded-full blur-[100px] animate-float" style={{ animationDelay: "2s" }} />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-primary/10 rounded-full blur-[80px] animate-pulse" />
+      
+      {/* Glass morphism card */}
+      <Card className="w-full max-w-md relative z-10 border-border/30 shadow-2xl backdrop-blur-xl bg-card/80">
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto mb-4 bg-gradient-primary rounded-2xl w-20 h-20 flex items-center justify-center shadow-glow">
+            <Sparkles className="h-10 w-10 text-background" />
           </div>
-          <CardTitle className="text-3xl bg-gradient-primary bg-clip-text text-transparent">
+          <CardTitle className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent tracking-tight">
             VibeBaze
           </CardTitle>
-          <CardDescription>Join the creative revolution</CardDescription>
+          <CardDescription className="text-base mt-2">Where creators thrive</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue={defaultTab} className="w-full">

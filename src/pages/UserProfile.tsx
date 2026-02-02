@@ -7,9 +7,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
-import { Loader2, Play, Grid, ChevronRight } from "lucide-react";
+import { Loader2, Play, Grid, ChevronRight, MessageCircle } from "lucide-react";
 import FollowButton from "@/components/FollowButton";
 import FollowListModal from "@/components/FollowListModal";
+import { toast } from "sonner";
 
 const PREVIEW_LIMIT = 6; // Show only 6 posts in preview
 
@@ -139,14 +140,40 @@ const UserProfile = () => {
                 </div>
               </div>
 
-              {/* Follow Button */}
-              <div className="w-full max-w-md">
+              {/* Action Buttons */}
+              <div className="w-full max-w-md flex gap-3">
                 <FollowButton
                   targetUserId={userId!}
                   currentUserId={user?.id}
                   variant="default"
                   size="lg"
+                  className="flex-1"
                 />
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={async () => {
+                    if (!user) {
+                      toast.error("Please log in to send messages");
+                      navigate("/auth");
+                      return;
+                    }
+                    // Create or get conversation and navigate
+                    const { data, error } = await supabase.rpc('get_or_create_conversation', {
+                      p_user_one: user.id,
+                      p_user_two: userId!
+                    });
+                    if (error) {
+                      toast.error("Failed to start conversation");
+                      return;
+                    }
+                    navigate("/messages", { state: { conversationId: data, otherUserId: userId } });
+                  }}
+                  className="gap-2"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                  <span className="hidden sm:inline">Message</span>
+                </Button>
               </div>
             </div>
 
