@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { signIn, signUp } from "@/lib/auth";
-import { Sparkles } from "lucide-react";
+import vibebazeLogo from "@/assets/vibebaze-logo.png";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -84,8 +84,8 @@ const Auth = () => {
       {/* Glass morphism card */}
       <Card className="w-full max-w-md relative z-10 border-border/30 shadow-2xl backdrop-blur-xl bg-card/80">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-4 bg-gradient-primary rounded-2xl w-20 h-20 flex items-center justify-center shadow-glow">
-            <Sparkles className="h-10 w-10 text-background" />
+          <div className="mx-auto mb-4">
+            <img src={vibebazeLogo} alt="VibeBaze" className="h-20 w-20 object-contain" />
           </div>
           <CardTitle className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent tracking-tight">
             VibeBaze

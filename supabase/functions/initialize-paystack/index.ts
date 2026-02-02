@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 interface InitializePaymentRequest {
@@ -21,8 +21,12 @@ Deno.serve(async (req) => {
   try {
     const paystackSecret = Deno.env.get('PAYSTACK_SECRET_KEY');
     if (!paystackSecret) {
-      throw new Error('PAYSTACK_SECRET_KEY not configured');
+      console.error('PAYSTACK_SECRET_KEY not found in environment');
+      throw new Error('Payment service not configured');
     }
+
+    // Log key prefix for debugging (safe - only first 10 chars)
+    console.log('Paystack key prefix:', paystackSecret.substring(0, 10) + '...');
 
     // Verify user is authenticated
     const authHeader = req.headers.get('Authorization');
@@ -53,22 +57,24 @@ Deno.serve(async (req) => {
       throw new Error('User ID mismatch');
     }
 
-    // Convert to kobo (Paystack uses smallest currency unit)
-    const amountInKobo = Math.round(amount * 100);
+    // Convert to smallest currency unit (kobo for NGN, cents for KES)
+    const amountInSmallestUnit = Math.round(amount * 100);
 
     // Generate unique reference
     const reference = `vb_${userId.slice(0, 8)}_${Date.now()}`;
+
+    console.log('Initializing Paystack payment:', { reference, amount, amountInSmallestUnit, email });
 
     // Initialize Paystack transaction
     const response = await fetch('https://api.paystack.co/transaction/initialize', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${paystackSecret}`,
+        'Authorization': `Bearer ${paystackSecret.trim()}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         email,
-        amount: amountInKobo,
+        amount: amountInSmallestUnit,
         currency: 'KES',
         reference,
         callback_url: callbackUrl || 'https://vibebaze.lovable.app/wallet',
@@ -88,13 +94,14 @@ Deno.serve(async (req) => {
     });
 
     const data = await response.json();
+    console.log('Paystack response status:', response.status, 'success:', data.status);
 
     if (!data.status) {
-      console.error('Paystack error:', data);
+      console.error('Paystack error:', JSON.stringify(data));
       throw new Error(data.message || 'Failed to initialize payment');
     }
 
-    console.log('Paystack initialized:', { reference, amount: amountInKobo });
+    console.log('Paystack initialized successfully:', { reference, authorization_url: data.data.authorization_url });
 
     return new Response(JSON.stringify({
       success: true,
@@ -107,7 +114,7 @@ Deno.serve(async (req) => {
     });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Initialize error:', error);
+    console.error('Initialize payment error:', message);
     return new Response(JSON.stringify({ 
       success: false, 
       error: message 

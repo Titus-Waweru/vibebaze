@@ -1,22 +1,26 @@
-import { Home, Search, PlusCircle, Bell, User, Download } from "lucide-react";
+import { Home, Search, PlusCircle, Bell, User, Download, MessageCircle } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import vibebazeLogo from "@/assets/vibebaze-logo.png";
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
   useEffect(() => {
     if (user) {
       fetchUnreadCount();
+      fetchUnreadMessages();
 
       // Subscribe to new notifications
-      const channel = supabase
+      const notifChannel = supabase
         .channel('navbar-notifications')
         .on(
           'postgres_changes',
@@ -32,8 +36,25 @@ const Navbar = () => {
         )
         .subscribe();
 
+      // Subscribe to new messages
+      const msgChannel = supabase
+        .channel('navbar-messages')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+          },
+          () => {
+            fetchUnreadMessages();
+          }
+        )
+        .subscribe();
+
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(notifChannel);
+        supabase.removeChannel(msgChannel);
       };
     }
   }, [user]);
@@ -52,12 +73,39 @@ const Navbar = () => {
     }
   };
 
+  const fetchUnreadMessages = async () => {
+    if (!user) return;
+
+    // Get conversations where user is a participant
+    const { data: conversations } = await supabase
+      .from("conversations")
+      .select("id")
+      .or(`participant_one.eq.${user.id},participant_two.eq.${user.id}`);
+
+    if (!conversations || conversations.length === 0) {
+      setUnreadMessages(0);
+      return;
+    }
+
+    const convIds = conversations.map(c => c.id);
+    
+    const { count } = await supabase
+      .from("messages")
+      .select("*", { count: "exact", head: true })
+      .in("conversation_id", convIds)
+      .neq("sender_id", user.id)
+      .eq("is_read", false);
+
+    setUnreadMessages(count || 0);
+  };
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border z-50 md:top-0 md:bottom-auto md:border-b md:border-t-0">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo - Desktop */}
-          <div className="hidden md:block">
+          <div className="hidden md:flex items-center gap-2 cursor-pointer" onClick={() => navigate("/feed")}>
+            <img src={vibebazeLogo} alt="VibeBaze" className="h-10 w-10 object-contain" />
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
               VibeBaze
             </h1>
@@ -118,7 +166,20 @@ const Navbar = () => {
           </div>
 
           {/* Right side - Desktop */}
-          <div className="hidden md:flex items-center">
+          <div className="hidden md:flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/messages")}
+              className="relative"
+            >
+              <MessageCircle className="h-5 w-5" />
+              {unreadMessages > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                  {unreadMessages > 99 ? "99+" : unreadMessages}
+                </span>
+              )}
+            </Button>
             <Button
               variant="outline"
               size="sm"

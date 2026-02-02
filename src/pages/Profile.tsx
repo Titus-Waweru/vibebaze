@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
-import { Settings, LogOut, Loader2 } from "lucide-react";
+import { Settings, LogOut, Loader2, GraduationCap, Wallet } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import { toast } from "sonner";
 import FollowListModal from "@/components/FollowListModal";
+import vibebazeLogo from "@/assets/vibebaze-logo.png";
 
 const Profile = () => {
   const { user, loading: authLoading } = useAuth();
@@ -142,7 +143,27 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Quick Actions */}
+              <div className="grid grid-cols-2 gap-3 w-full max-w-md">
+                <Button
+                  variant="outline"
+                  className="flex-1 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border-primary/30 hover:border-primary"
+                  onClick={() => navigate("/wallet")}
+                >
+                  <Wallet className="h-4 w-4 mr-2" />
+                  My Wallet
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30 hover:border-amber-500"
+                  onClick={() => navigate("/creators-school")}
+                >
+                  <GraduationCap className="h-4 w-4 mr-2" />
+                  Creators School
+                </Button>
+              </div>
+
+              {/* Profile Actions */}
               <div className="flex gap-4 w-full max-w-md">
                 <Button
                   variant="outline"
