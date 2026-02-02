@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useWallet, Transaction } from "@/hooks/useWallet";
+import { usePaystack } from "@/hooks/usePaystack";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,13 +32,17 @@ import {
   Gift,
   DollarSign,
   TrendingUp,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 const Wallet = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { initializePayment, loading: paystackLoading } = usePaystack();
   const {
     wallet,
     transactions,
@@ -48,10 +53,19 @@ const Wallet = () => {
   } = useWallet(user?.id);
 
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
+  const [showFundDialog, setShowFundDialog] = useState(false);
   const [showPhoneDialog, setShowPhoneDialog] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [fundAmount, setFundAmount] = useState("");
   const [mpesaPhone, setMpesaPhone] = useState("");
   const [processing, setProcessing] = useState(false);
+
+  // Check for payment success callback
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      toast.success("Payment successful! Your wallet will be updated shortly.");
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -95,6 +109,23 @@ const Wallet = () => {
     if (success) {
       setShowPhoneDialog(false);
     }
+  };
+
+  const handleFundWallet = async () => {
+    const amount = parseFloat(fundAmount);
+    if (isNaN(amount) || amount < 50) {
+      toast.error("Minimum funding amount is KSh 50");
+      return;
+    }
+
+    // Get user email
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser?.email) {
+      toast.error("Email required for payment");
+      return;
+    }
+
+    await initializePayment(amount, authUser.email, user!.id);
   };
 
   const getTransactionIcon = (tx: Transaction) => {
@@ -173,6 +204,14 @@ const Wallet = () => {
 
             <div className="flex gap-3">
               <Button
+                onClick={() => setShowFundDialog(true)}
+                className="flex-1 bg-gradient-primary hover:shadow-glow"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Fund Wallet
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => {
                   if (!wallet?.mpesa_phone) {
                     setShowPhoneDialog(true);
@@ -181,17 +220,9 @@ const Wallet = () => {
                   }
                 }}
                 disabled={!wallet || wallet.available_balance < 50}
-                className="flex-1"
               >
                 <ArrowUpRight className="h-4 w-4 mr-2" />
                 Withdraw
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowPhoneDialog(true)}
-              >
-                <Phone className="h-4 w-4 mr-2" />
-                M-PESA
               </Button>
             </div>
           </CardContent>
@@ -385,6 +416,42 @@ const Wallet = () => {
             <Button onClick={handleSavePhone} disabled={processing}>
               {processing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Fund Wallet Dialog */}
+      <Dialog open={showFundDialog} onOpenChange={setShowFundDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Fund Your Wallet</DialogTitle>
+            <DialogDescription>
+              Add money to your VibeBaze wallet via Paystack.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Amount (KSh)</Label>
+              <Input
+                type="number"
+                placeholder="Enter amount"
+                value={fundAmount}
+                onChange={(e) => setFundAmount(e.target.value)}
+                min={50}
+              />
+              <p className="text-xs text-muted-foreground">
+                Minimum: KSh 50 • 2% platform fee on transfers
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFundDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleFundWallet} disabled={paystackLoading}>
+              {paystackLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Continue to Payment
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -90,7 +90,7 @@ export const InstallPrompt = () => {
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-primary">
             <Download className="h-8 w-8 text-primary-foreground" />
           </div>
-          <DialogTitle className="text-center text-2xl">Install VibeLoop</DialogTitle>
+          <DialogTitle className="text-center text-2xl">Install VibeBaze</DialogTitle>
           <DialogDescription className="text-center text-base pt-2">
             Get the full African-first creator experience with offline access, push notifications, and faster loading!
           </DialogDescription>

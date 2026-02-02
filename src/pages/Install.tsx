@@ -63,7 +63,7 @@ const Install = () => {
           <Link to="/" className="p-2 hover:bg-muted rounded-full transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-xl font-bold">Install VibeLoop</h1>
+          <h1 className="text-xl font-bold">Install VibeBaze</h1>
         </div>
       </header>
 
@@ -73,9 +73,9 @@ const Install = () => {
           <div className="w-24 h-24 mx-auto bg-gradient-to-br from-primary to-accent rounded-3xl flex items-center justify-center shadow-lg">
             <Download className="w-12 h-12 text-primary-foreground" />
           </div>
-          <h2 className="text-3xl font-bold">Get VibeLoop on Your Device</h2>
+          <h2 className="text-3xl font-bold">Get VibeBaze on Your Device</h2>
           <p className="text-muted-foreground max-w-md mx-auto">
-            Install VibeLoop for a faster, app-like experience with offline support and quick access from your home screen.
+            Install VibeBaze for a faster, app-like experience with offline support and quick access from your home screen.
           </p>
         </div>
 
@@ -89,7 +89,7 @@ const Install = () => {
                 className="w-full text-lg py-6 bg-primary hover:bg-primary/90"
               >
                 <Download className="w-5 h-5 mr-2" />
-                Install VibeLoop Now
+                Install VibeBaze Now
               </Button>
             </CardContent>
           </Card>
@@ -100,7 +100,7 @@ const Install = () => {
           <Card className="border-green-500/50 bg-green-500/10">
             <CardContent className="p-6 text-center">
               <p className="text-green-500 font-semibold text-lg">
-                ✓ VibeLoop is installed on your device!
+                ✓ VibeBaze is installed on your device!
               </p>
             </CardContent>
           </Card>
@@ -125,7 +125,7 @@ const Install = () => {
                     </div>
                     <div>
                       <p className="font-medium">Open in Safari</p>
-                      <p className="text-sm text-muted-foreground">VibeLoop must be opened in Safari browser</p>
+                      <p className="text-sm text-muted-foreground">VibeBaze must be opened in Safari browser</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -230,7 +230,7 @@ const Install = () => {
                     <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
                       <span className="text-sm font-bold text-primary">3</span>
                     </div>
-                    <p className="font-medium">VibeLoop will open in its own window</p>
+                    <p className="font-medium">VibeBaze will open in its own window</p>
                   </div>
                 </div>
               </CardContent>

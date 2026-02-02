@@ -21,6 +21,7 @@ import PostDetail from "./pages/PostDetail";
 import Wallet from "./pages/Wallet";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import CreatorsSchool from "./pages/CreatorsSchool";
 import NotFound from "./pages/NotFound";
 import { supabase } from "@/integrations/supabase/client";
 import { PermissionsSetup } from "@/components/PermissionsSetup";
@@ -82,6 +83,7 @@ const AppRoutes = () => {
       <Route path="/wallet" element={<Wallet />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
+      <Route path="/creators-school" element={<CreatorsSchool />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>

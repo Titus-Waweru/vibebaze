@@ -21,22 +21,22 @@ const Terms = () => {
 
         <div className="prose prose-invert max-w-none space-y-6 text-muted-foreground">
           <p className="text-sm">
-            <strong className="text-foreground">Last Updated:</strong> January 2026
+            <strong className="text-foreground">Last Updated:</strong> February 2026
           </p>
 
           <section>
-            <h2 className="text-xl font-semibold text-foreground mb-3">1. About VibeLoop</h2>
+            <h2 className="text-xl font-semibold text-foreground mb-3">1. About VibeBaze</h2>
             <p>
-              VibeLoop is an African-first social video platform designed to empower African creators 
+              VibeBaze is an African-first social video platform designed to empower African creators 
               to share content, build communities, and earn money through their creativity. By using 
-              VibeLoop, you agree to these Terms & Conditions.
+              VibeBaze, you agree to these Terms & Conditions.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">2. Eligibility</h2>
             <p>
-              You must be at least 13 years old to use VibeLoop. If you are under 18, you must have 
+              You must be at least 13 years old to use VibeBaze. If you are under 18, you must have 
               parental or guardian consent. To use monetization features (receiving tips, withdrawals), 
               you must:
             </p>
@@ -70,7 +70,7 @@ const Terms = () => {
               <li>Promotes violence, terrorism, or illegal activities</li>
             </ul>
             <p className="mt-3">
-              VibeLoop reserves the right to remove content and suspend accounts that violate these 
+              VibeBaze reserves the right to remove content and suspend accounts that violate these 
               guidelines without prior notice.
             </p>
           </section>
@@ -78,23 +78,23 @@ const Terms = () => {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">5. Monetization & Payments</h2>
             <p>
-              VibeLoop enables creators to earn money through tips and content rewards. Key terms:
+              VibeBaze enables creators to earn money through tips and content rewards. Key terms:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>All transactions are in Kenyan Shillings (KES)</li>
-              <li>A platform fee of 10% applies to tips received</li>
+              <li>A platform fee of 2% applies to tips received</li>
               <li>Minimum withdrawal amount is KSh 50</li>
               <li>Withdrawals are processed via M-PESA only</li>
               <li>A valid Kenyan phone number (+254) is required for all money transactions</li>
-              <li>Processing times may vary; VibeLoop is not responsible for M-PESA delays</li>
+              <li>Processing times may vary; VibeBaze is not responsible for M-PESA delays</li>
             </ul>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">6. Intellectual Property</h2>
             <p>
-              You retain ownership of content you create and post on VibeLoop. However, by posting 
-              content, you grant VibeLoop a non-exclusive, worldwide, royalty-free license to use, 
+              You retain ownership of content you create and post on VibeBaze. However, by posting 
+              content, you grant VibeBaze a non-exclusive, worldwide, royalty-free license to use, 
               display, reproduce, and distribute your content on the platform.
             </p>
           </section>
@@ -103,7 +103,7 @@ const Terms = () => {
             <h2 className="text-xl font-semibold text-foreground mb-3">7. Jurisdiction</h2>
             <p>
               These Terms are governed by the laws of the Republic of Kenya. Any disputes shall be 
-              resolved in the courts of Kenya. VibeLoop operates in compliance with Kenyan data 
+              resolved in the courts of Kenya. VibeBaze operates in compliance with Kenyan data 
               protection laws and the Kenya Data Protection Act, 2019.
             </p>
           </section>
@@ -111,7 +111,7 @@ const Terms = () => {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">8. Termination</h2>
             <p>
-              VibeLoop may suspend or terminate your account at any time for violations of these 
+              VibeBaze may suspend or terminate your account at any time for violations of these 
               Terms. Upon termination, you lose access to your account and any pending earnings 
               below the minimum withdrawal threshold may be forfeited.
             </p>
@@ -120,7 +120,7 @@ const Terms = () => {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">9. Limitation of Liability</h2>
             <p>
-              VibeLoop is provided "as is" without warranties of any kind. We are not liable for 
+              VibeBaze is provided "as is" without warranties of any kind. We are not liable for 
               any indirect, incidental, or consequential damages arising from your use of the platform.
             </p>
           </section>
@@ -128,7 +128,7 @@ const Terms = () => {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">10. Changes to Terms</h2>
             <p>
-              We may update these Terms from time to time. Continued use of VibeLoop after changes 
+              We may update these Terms from time to time. Continued use of VibeBaze after changes 
               constitutes acceptance of the new Terms. We will notify users of significant changes 
               via the app or email.
             </p>
@@ -136,10 +136,10 @@ const Terms = () => {
 
           <section className="border-t border-border pt-6">
             <p className="text-center">
-              <strong className="text-foreground">VibeLoop</strong> — Built for African Creators 🌍
+              <strong className="text-foreground">VibeBaze</strong> — Built for African Creators 🌍
             </p>
             <p className="text-center text-sm mt-2">
-              Questions? Contact us at support@vibeloop.app
+              Questions? Contact us at support@vibebaze.app
             </p>
           </section>
         </div>
