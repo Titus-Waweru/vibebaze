@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, Users, Heart, Zap, Download, Globe } from "lucide-react";
 import heroGradient from "@/assets/hero-gradient.jpg";
+import vibebazeLogo from "@/assets/vibebaze-logo.png";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { InstallBanner } from "@/components/InstallBanner";
 import { Footer } from "@/components/Footer";
@@ -29,6 +30,11 @@ const Landing = () => {
         {/* Content */}
         <div className="relative z-10 container mx-auto px-4 text-center">
           <div className="animate-fade-in">
+            {/* Logo */}
+            <div className="flex justify-center mb-6">
+              <img src={vibebazeLogo} alt="VibeBaze Logo" className="h-24 w-24 md:h-32 md:w-32 object-contain animate-float" />
+            </div>
+            
             {/* African-First Badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
               <Globe className="h-4 w-4 text-primary" />
