@@ -21,13 +21,13 @@ const Privacy = () => {
 
         <div className="prose prose-invert max-w-none space-y-6 text-muted-foreground">
           <p className="text-sm">
-            <strong className="text-foreground">Last Updated:</strong> January 2026
+            <strong className="text-foreground">Last Updated:</strong> February 2026
           </p>
 
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">1. Introduction</h2>
             <p>
-              VibeLoop ("we", "our", "us") is committed to protecting your privacy. This Privacy 
+              VibeBaze ("we", "our", "us") is committed to protecting your privacy. This Privacy 
               Policy explains how we collect, use, disclose, and safeguard your information when 
               you use our African-first social video platform.
             </p>
@@ -76,7 +76,7 @@ const Privacy = () => {
             <p>We may share your information with:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li><strong>Other users:</strong> Your profile, posts, and public activity</li>
-              <li><strong>Payment processors:</strong> M-PESA/Safaricom for transaction processing</li>
+              <li><strong>Payment processors:</strong> M-PESA/Safaricom and Paystack for transaction processing</li>
               <li><strong>Service providers:</strong> Cloud hosting, analytics, and push notification services</li>
               <li><strong>Legal authorities:</strong> When required by law or to protect rights and safety</li>
             </ul>
@@ -112,7 +112,7 @@ const Privacy = () => {
               <li>Port your data to another service</li>
             </ul>
             <p className="mt-3">
-              To exercise these rights, contact us at privacy@vibeloop.app
+              To exercise these rights, contact us at privacy@vibebaze.app
             </p>
           </section>
 
@@ -132,7 +132,7 @@ const Privacy = () => {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">8. Children's Privacy</h2>
             <p>
-              VibeLoop is not intended for children under 13. We do not knowingly collect personal 
+              VibeBaze is not intended for children under 13. We do not knowingly collect personal 
               data from children under 13. If we discover such data has been collected, we will 
               delete it immediately.
             </p>
@@ -159,14 +159,14 @@ const Privacy = () => {
             <h2 className="text-xl font-semibold text-foreground mb-3">11. Contact Us</h2>
             <p>For privacy-related inquiries:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Email: privacy@vibeloop.app</li>
-              <li>Data Protection Officer: dpo@vibeloop.app</li>
+              <li>Email: privacy@vibebaze.app</li>
+              <li>Data Protection Officer: dpo@vibebaze.app</li>
             </ul>
           </section>
 
           <section className="border-t border-border pt-6">
             <p className="text-center">
-              <strong className="text-foreground">VibeLoop</strong> — Your privacy matters to us 🔒
+              <strong className="text-foreground">VibeBaze</strong> — Your privacy matters to us 🔒
             </p>
             <p className="text-center text-sm mt-2">
               Built for African Creators, with African data protection in mind.

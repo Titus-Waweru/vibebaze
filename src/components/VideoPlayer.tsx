@@ -37,10 +37,10 @@ const getVideoBadge = (likes: number, comments: number, views: number): VideoBad
 
 // Get or create session ID for anonymous users
 const getSessionId = (): string => {
-  let sessionId = sessionStorage.getItem("vibeloop_session_id");
+  let sessionId = sessionStorage.getItem("vibebaze_session_id");
   if (!sessionId) {
     sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    sessionStorage.setItem("vibeloop_session_id", sessionId);
+    sessionStorage.setItem("vibebaze_session_id", sessionId);
   }
   return sessionId;
 };

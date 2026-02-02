@@ -91,8 +91,8 @@ export const PhoneNumberModal = ({
           </div>
           <DialogTitle className="text-center text-xl">Kenyan Phone Number Required</DialogTitle>
           <DialogDescription className="text-center text-base pt-2">
-            To send or receive money on VibeLoop, you need a valid Kenyan M-PESA number (+254).
-            This is what makes VibeLoop different — built for African creators!
+            To send or receive money on VibeBaze, you need a valid Kenyan M-PESA number (+254).
+            This is what makes VibeBaze different — built for African creators!
           </DialogDescription>
         </DialogHeader>
 
@@ -125,7 +125,7 @@ export const PhoneNumberModal = ({
           <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
             <p className="text-sm text-muted-foreground">
               <strong className="text-foreground">Why Kenya only?</strong><br />
-              VibeLoop is an African-first platform. We're starting with Kenya and M-PESA, 
+              VibeBaze is an African-first platform. We're starting with Kenya and M-PESA, 
               with more African countries coming soon! 🌍
             </p>
           </div>
