@@ -59,7 +59,7 @@ const Navbar = () => {
           {/* Logo - Desktop */}
           <div className="hidden md:block">
             <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              VibeLoop
+              VibeBaze
             </h1>
           </div>
 

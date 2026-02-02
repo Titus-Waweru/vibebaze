@@ -8,6 +8,7 @@ interface FollowButtonProps {
   variant?: "default" | "outline" | "ghost";
   size?: "default" | "sm" | "lg" | "icon";
   showIcon?: boolean;
+  className?: string;
 }
 
 const FollowButton = ({
@@ -16,6 +17,7 @@ const FollowButton = ({
   variant = "default",
   size = "default",
   showIcon = true,
+  className,
 }: FollowButtonProps) => {
   const { isFollowing, loading, toggleFollow } = useFollow(targetUserId, currentUserId);
 
@@ -29,7 +31,7 @@ const FollowButton = ({
       size={size}
       onClick={toggleFollow}
       disabled={loading || !currentUserId}
-      className={isFollowing ? "border-primary/50 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50" : ""}
+      className={`${isFollowing ? "border-primary/50 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50" : ""} ${className || ""}`}
     >
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin" />

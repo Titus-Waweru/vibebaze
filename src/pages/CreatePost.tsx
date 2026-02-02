@@ -6,10 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
-import { Image, Video, Music, FileText, Upload } from "lucide-react";
+import { Image, Video, Music, FileText, Upload, X } from "lucide-react";
 
 const CreatePost = () => {
   const { user } = useAuth();
@@ -18,6 +19,8 @@ const CreatePost = () => {
   const [postType, setPostType] = useState<"text" | "image" | "video" | "audio">("text");
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -29,17 +32,42 @@ const CreatePost = () => {
     const fileExt = file.name.split(".").pop();
     const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
 
-    const { data, error } = await supabase.storage
-      .from("media")
-      .upload(fileName, file);
+    setIsUploading(true);
+    setUploadProgress(0);
 
-    if (error) throw error;
+    // Simulate progress for better UX (Supabase doesn't provide native progress)
+    const progressInterval = setInterval(() => {
+      setUploadProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + Math.random() * 15;
+      });
+    }, 200);
 
-    const { data: { publicUrl } } = supabase.storage
-      .from("media")
-      .getPublicUrl(fileName);
+    try {
+      const { data, error } = await supabase.storage
+        .from("media")
+        .upload(fileName, file);
 
-    return publicUrl;
+      clearInterval(progressInterval);
+
+      if (error) throw error;
+
+      setUploadProgress(100);
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("media")
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } finally {
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 500);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,7 +172,7 @@ const CreatePost = () => {
               {postType !== "text" && (
                 <div className="space-y-2">
                   <Label>Upload {postType}</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors">
+                  <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors relative">
                     <Input
                       type="file"
                       accept={
@@ -161,7 +189,19 @@ const CreatePost = () => {
                     <label htmlFor="file-upload" className="cursor-pointer">
                       <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                       {file ? (
-                        <p className="text-sm text-foreground">{file.name}</p>
+                        <div className="flex items-center justify-center gap-2">
+                          <p className="text-sm text-foreground truncate max-w-[200px]">{file.name}</p>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setFile(null);
+                            }}
+                            className="p-1 rounded-full hover:bg-muted"
+                          >
+                            <X className="h-4 w-4 text-muted-foreground" />
+                          </button>
+                        </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">
                           Click to upload {postType}
@@ -169,6 +209,17 @@ const CreatePost = () => {
                       )}
                     </label>
                   </div>
+                  
+                  {/* Upload Progress */}
+                  {isUploading && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Uploading...</span>
+                        <span className="text-primary font-medium">{Math.round(uploadProgress)}%</span>
+                      </div>
+                      <Progress value={uploadProgress} className="h-2" />
+                    </div>
+                  )}
                 </div>
               )}
 
