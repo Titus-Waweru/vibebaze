@@ -158,8 +158,13 @@ export const useMessaging = (userId: string | undefined) => {
   // Send a message
   const sendMessage = useCallback(
     async (conversationId: string, content: string, recipientId: string) => {
-      if (!userId || !encryptionReady) {
-        toast.error("Encryption not ready");
+      if (!userId) {
+        toast.error("Please log in to send messages");
+        return false;
+      }
+      
+      if (!encryptionReady) {
+        toast.error("Encryption not ready. Please wait...");
         return false;
       }
 
@@ -169,13 +174,17 @@ export const useMessaging = (userId: string | undefined) => {
         // Get recipient's public key
         const recipientPublicKey = await getRecipientPublicKey(recipientId);
         if (!recipientPublicKey) {
-          throw new Error("Recipient encryption key not found");
+          console.error("Recipient encryption key not found for:", recipientId);
+          toast.error("Cannot send message - recipient hasn't set up secure messaging yet");
+          return false;
         }
 
         // Encrypt the message
         const encrypted = await encryptForRecipient(content, recipientPublicKey);
         if (!encrypted) {
-          throw new Error("Failed to encrypt message");
+          console.error("Failed to encrypt message");
+          toast.error("Failed to encrypt message");
+          return false;
         }
 
         // Store in database
@@ -193,7 +202,10 @@ export const useMessaging = (userId: string | undefined) => {
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("Database error:", error);
+          throw error;
+        }
 
         // Update conversation's last_message_at
         await supabase
@@ -217,7 +229,7 @@ export const useMessaging = (userId: string | undefined) => {
           return true;
         }
         
-        toast.error("Failed to send message");
+        toast.error("Failed to send message. Please try again.");
         return false;
       } finally {
         setSendingMessage(false);
