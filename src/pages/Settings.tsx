@@ -12,7 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import Navbar from "@/components/Navbar";
 import { PhoneNumberModal } from "@/components/PhoneNumberModal";
-import { ArrowLeft, Bell, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save, Phone, FileText, Shield } from "lucide-react";
+import { ArrowLeft, Bell, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save, Phone, FileText, Shield, Gift } from "lucide-react";
+import ReferralCard from "@/components/ReferralCard";
 import { toast } from "sonner";
 
 const Settings = () => {
@@ -454,6 +455,13 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Referral Section */}
+        {user && (
+          <div className="mt-6">
+            <ReferralCard userId={user.id} />
+          </div>
+        )}
 
         {/* Legal Links */}
         <Card className="border-border/50 shadow-card mt-6">

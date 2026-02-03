@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
-import { Settings, LogOut, Loader2, GraduationCap, Wallet } from "lucide-react";
+import { Settings, LogOut, Loader2, GraduationCap, Wallet, Gift, Trash2 } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import { toast } from "sonner";
 import FollowListModal from "@/components/FollowListModal";
-import vibebazeLogo from "@/assets/vibebaze-logo.png";
+import ReferralCard from "@/components/ReferralCard";
+import VibePointsCard from "@/components/VibePointsCard";
+import DeletePostButton from "@/components/DeletePostButton";
 
 const Profile = () => {
   const { user, loading: authLoading } = useAuth();
@@ -144,14 +146,25 @@ const Profile = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-2 gap-3 w-full max-w-md">
+              <div className="grid grid-cols-3 gap-3 w-full max-w-md">
                 <Button
                   variant="outline"
                   className="flex-1 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border-primary/30 hover:border-primary"
                   onClick={() => navigate("/wallet")}
                 >
                   <Wallet className="h-4 w-4 mr-2" />
-                  My Wallet
+                  Wallet
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-green-500/30 hover:border-green-500"
+                  onClick={() => {
+                    const element = document.getElementById('referral-section');
+                    element?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  <Gift className="h-4 w-4 mr-2" />
+                  Refer
                 </Button>
                 <Button
                   variant="outline"
@@ -159,7 +172,7 @@ const Profile = () => {
                   onClick={() => navigate("/creators-school")}
                 >
                   <GraduationCap className="h-4 w-4 mr-2" />
-                  Creators School
+                  Learn
                 </Button>
               </div>
 
@@ -196,7 +209,7 @@ const Profile = () => {
                   {posts.map((post) => (
                     <div
                       key={post.id}
-                      className="aspect-square bg-muted rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                      className="aspect-square bg-muted rounded-lg overflow-hidden relative group"
                     >
                       {post.media_url && (
                         <img
@@ -205,6 +218,14 @@ const Profile = () => {
                           className="w-full h-full object-cover"
                         />
                       )}
+                      {/* Delete overlay */}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <DeletePostButton
+                          postId={post.id}
+                          mediaUrl={post.media_url}
+                          onDeleted={fetchUserPosts}
+                        />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -212,6 +233,12 @@ const Profile = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Referral & Points Section */}
+        <div id="referral-section" className="mt-6 space-y-6">
+          <ReferralCard userId={user.id} />
+          <VibePointsCard userId={user.id} />
+        </div>
       </div>
 
       <FollowListModal
