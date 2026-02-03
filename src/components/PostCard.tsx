@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Share2, Bookmark, Link2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, Bookmark, Link2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState, useEffect } from "react";
@@ -9,6 +9,7 @@ import CommentSheet from "./CommentSheet";
 import VideoPlayer from "./VideoPlayer";
 import TipButton from "./TipButton";
 import { useWallet } from "@/hooks/useWallet";
+import { downloadWithWatermark } from "@/utils/downloadWithWatermark";
 
 interface PostCardProps {
   post: {
@@ -37,6 +38,7 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
   const [commentsCount, setCommentsCount] = useState(post.comments_count);
   const [isSaved, setIsSaved] = useState(false);
   const [commentSheetOpen, setCommentSheetOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const navigate = useNavigate();
   const { sendTip } = useWallet(currentUserId);
 
@@ -154,6 +156,25 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
     toast.success("Direct link copied!");
   };
 
+  const handleDownload = async () => {
+    if (!post.media_url) return;
+    
+    setDownloading(true);
+    const success = await downloadWithWatermark({
+      url: post.media_url,
+      filename: post.media_url.split("/").pop() || "media",
+      username: post.profiles?.username || "user",
+      type: post.type as "image" | "video",
+    });
+    
+    if (success) {
+      toast.success("Downloaded with VibeBaze watermark!");
+    } else {
+      toast.error("Failed to download");
+    }
+    setDownloading(false);
+  };
+
   const handleProfileClick = () => {
     if (post.user_id === currentUserId) {
       navigate("/profile");
@@ -260,6 +281,18 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
               <Button variant="ghost" size="sm" onClick={handleShare} className="hover:text-accent">
                 <Share2 className="h-6 w-6" />
               </Button>
+              {/* Download Button - only for image/video posts */}
+              {(post.type === "image" || post.type === "video") && post.media_url && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleDownload}
+                  disabled={downloading}
+                  className="hover:text-primary"
+                >
+                  <Download className={`h-5 w-5 ${downloading ? "animate-bounce" : ""}`} />
+                </Button>
+              )}
               {/* Tip Button - only show for other users' posts */}
               {!isOwnPost && currentUserId && (
                 <TipButton

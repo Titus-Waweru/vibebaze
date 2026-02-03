@@ -19,6 +19,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Navbar from "@/components/Navbar";
+import VibePointsCard from "@/components/VibePointsCard";
+import ReferralCard from "@/components/ReferralCard";
 import {
   ArrowLeft,
   Wallet as WalletIcon,
@@ -342,6 +344,14 @@ const Wallet = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* VibePoints & Referral */}
+        {user && (
+          <div className="mt-6 space-y-6">
+            <VibePointsCard userId={user.id} />
+            <ReferralCard userId={user.id} />
+          </div>
+        )}
       </div>
 
       {/* Withdraw Dialog */}

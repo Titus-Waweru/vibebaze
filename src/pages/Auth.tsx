@@ -1,19 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { signIn, signUp } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
+import { Gift } from "lucide-react";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const defaultTab = searchParams.get("mode") === "signup" ? "signup" : "login";
+  const referralCode = searchParams.get("ref");
+  const defaultTab = searchParams.get("mode") === "signup" || referralCode ? "signup" : "login";
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [signupData, setSignupData] = useState({
@@ -57,20 +61,49 @@ const Auth = () => {
     }
 
     setLoading(true);
-    const { error } = await signUp(
+    const { data, error } = await signUp(
       signupData.email,
       signupData.password,
       signupData.username,
       signupData.fullName
     );
-    setLoading(false);
-
+    
     if (error) {
+      setLoading(false);
       toast.error(error.message);
-    } else {
-      toast.success("Account created! Welcome to VibeBaze!");
-      navigate("/feed");
+      return;
     }
+
+    // Handle referral if code exists
+    if (referralCode && data?.user) {
+      try {
+        // Find referrer by code
+        const { data: referrerProfile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("referral_code", referralCode.toUpperCase())
+          .single();
+
+        if (referrerProfile && referrerProfile.id !== data.user.id) {
+          // Create referral record
+          await supabase.from("referrals").insert({
+            referrer_id: referrerProfile.id,
+            referred_id: data.user.id,
+            referral_code: referralCode.toUpperCase(),
+            status: "pending",
+          });
+          
+          toast.success("Referral applied! Your friend will earn points when you're verified.");
+        }
+      } catch (err) {
+        console.error("Referral error:", err);
+        // Don't block signup on referral error
+      }
+    }
+
+    setLoading(false);
+    toast.success("Account created! Welcome to VibeBaze!");
+    navigate("/feed");
   };
 
   return (
@@ -134,6 +167,14 @@ const Auth = () => {
             </TabsContent>
 
             <TabsContent value="signup">
+              {referralCode && (
+                <div className="mb-4 p-3 rounded-lg bg-green-500/10 border border-green-500/30 flex items-center gap-2">
+                  <Gift className="h-5 w-5 text-green-500" />
+                  <span className="text-sm text-foreground">
+                    You were invited! Your friend will earn <span className="font-semibold text-green-500">50 VibePoints</span> when you join.
+                  </span>
+                </div>
+              )}
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-username">Username</Label>
