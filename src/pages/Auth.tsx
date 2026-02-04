@@ -35,15 +35,17 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(loginData.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const { data, error } = await supabase.functions.invoke("send-password-reset", {
+        body: { email: loginData.email },
       });
 
       if (error) throw error;
 
-      toast.success("Password reset email sent! Check your inbox.");
+      toast.success("If this email exists, a reset link has been sent to your inbox.");
     } catch (error: any) {
-      toast.error(error.message || "Failed to send reset email");
+      console.error("Password reset error:", error);
+      // Always show success to prevent email enumeration
+      toast.success("If this email exists, a reset link has been sent to your inbox.");
     } finally {
       setLoading(false);
     }
@@ -115,11 +117,28 @@ const Auth = () => {
             status: "pending",
           });
           
-          toast.success("Referral applied! Your friend will earn points when you're verified.");
+          toast.success("Referral applied! Your friend will earn points when you verify.");
         }
       } catch (err) {
         console.error("Referral error:", err);
         // Don't block signup on referral error
+      }
+    }
+
+    // Send OTP for email verification
+    if (data?.user) {
+      try {
+        await supabase.functions.invoke("send-otp", {
+          body: { userId: data.user.id, email: signupData.email, type: "verification" },
+        });
+        
+        setLoading(false);
+        toast.success("Account created! Please verify your email.");
+        navigate(`/verify-email?email=${encodeURIComponent(signupData.email)}`);
+        return;
+      } catch (otpError) {
+        console.error("OTP send error:", otpError);
+        // Continue even if OTP fails - user can resend
       }
     }
 

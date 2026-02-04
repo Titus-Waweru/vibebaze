@@ -1,3 +1,6 @@
+# VibeBaze Robots.txt
+# https://www.vibebaze.com
+
 User-agent: Googlebot
 Allow: /
 Crawl-delay: 1
@@ -21,4 +24,14 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://vibebaze.lovable.app/sitemap.xml
+# Disallow private/authenticated areas
+Disallow: /settings
+Disallow: /messages
+Disallow: /wallet
+Disallow: /earnings
+Disallow: /admin
+Disallow: /notifications
+Disallow: /verify-email
+Disallow: /reset-password
+
+Sitemap: https://www.vibebaze.com/sitemap.xml

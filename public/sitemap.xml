@@ -1,51 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://vibebaze.lovable.app/</loc>
+    <loc>https://www.vibebaze.com/</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://vibebaze.lovable.app/auth</loc>
+    <loc>https://www.vibebaze.com/auth</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://vibebaze.lovable.app/feed</loc>
+    <loc>https://www.vibebaze.com/feed</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>hourly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>https://vibebaze.lovable.app/search</loc>
+    <loc>https://www.vibebaze.com/search</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://vibebaze.lovable.app/install</loc>
+    <loc>https://www.vibebaze.com/install</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://vibebaze.lovable.app/creators-school</loc>
+    <loc>https://www.vibebaze.com/creators-school</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>https://vibebaze.lovable.app/terms</loc>
+    <loc>https://www.vibebaze.com/terms</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
   </url>
   <url>
-    <loc>https://vibebaze.lovable.app/privacy</loc>
+    <loc>https://www.vibebaze.com/privacy</loc>
     <lastmod>2026-02-04</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://www.vibebaze.com/landing</loc>
+    <lastmod>2026-02-04</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
 </urlset>
