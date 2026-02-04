@@ -95,6 +95,7 @@ export type Database = {
           created_at: string | null
           id: string
           likes_count: number | null
+          parent_id: string | null
           post_id: string
           updated_at: string | null
           user_id: string
@@ -104,6 +105,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           likes_count?: number | null
+          parent_id?: string | null
           post_id: string
           updated_at?: string | null
           user_id: string
@@ -113,11 +115,19 @@ export type Database = {
           created_at?: string | null
           id?: string
           likes_count?: number | null
+          parent_id?: string | null
           post_id?: string
           updated_at?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "comments_post_id_fkey"
             columns: ["post_id"]
@@ -861,7 +871,11 @@ export type Database = {
       referrals: {
         Row: {
           created_at: string
+          created_device_fingerprint: string | null
+          created_ip_address: string | null
+          device_fingerprint: string | null
           id: string
+          ip_address: string | null
           points_awarded: number
           referral_code: string
           referred_id: string
@@ -871,7 +885,11 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_device_fingerprint?: string | null
+          created_ip_address?: string | null
+          device_fingerprint?: string | null
           id?: string
+          ip_address?: string | null
           points_awarded?: number
           referral_code: string
           referred_id: string
@@ -881,7 +899,11 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_device_fingerprint?: string | null
+          created_ip_address?: string | null
+          device_fingerprint?: string | null
           id?: string
+          ip_address?: string | null
           points_awarded?: number
           referral_code?: string
           referred_id?: string
@@ -1194,6 +1216,7 @@ export type Database = {
           bank_name: string | null
           created_at: string
           currency: string
+          earnings_locked_until: string | null
           frozen_at: string | null
           frozen_by: string | null
           frozen_reason: string | null
@@ -1216,6 +1239,7 @@ export type Database = {
           bank_name?: string | null
           created_at?: string
           currency?: string
+          earnings_locked_until?: string | null
           frozen_at?: string | null
           frozen_by?: string | null
           frozen_reason?: string | null
@@ -1238,6 +1262,7 @@ export type Database = {
           bank_name?: string | null
           created_at?: string
           currency?: string
+          earnings_locked_until?: string | null
           frozen_at?: string | null
           frozen_by?: string | null
           frozen_reason?: string | null
@@ -1313,6 +1338,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_earnings_unlocked: { Args: { p_user_id: string }; Returns: boolean }
       check_otp_rate_limit: { Args: { p_user_id: string }; Returns: boolean }
       check_rate_limit: {
         Args: {
@@ -1320,6 +1346,14 @@ export type Database = {
           p_max_actions: number
           p_user_id: string
           p_window_hours?: number
+        }
+        Returns: boolean
+      }
+      check_referral_abuse: {
+        Args: {
+          p_device_fingerprint: string
+          p_ip_address: string
+          p_referrer_id: string
         }
         Returns: boolean
       }

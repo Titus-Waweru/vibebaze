@@ -13,6 +13,7 @@ export interface Wallet {
   is_verified: boolean;
   created_at: string;
   updated_at: string;
+  earnings_locked_until: string | null;
 }
 
 export interface Transaction {

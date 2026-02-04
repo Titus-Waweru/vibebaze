@@ -35,6 +35,8 @@ import {
   DollarSign,
   TrendingUp,
   Plus,
+  Lock,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -188,6 +190,20 @@ const Wallet = () => {
             <div className="text-4xl font-bold text-foreground mb-2">
               KSh {wallet?.available_balance?.toLocaleString() || "0.00"}
             </div>
+
+            {/* 72h Lock Warning */}
+            {wallet?.earnings_locked_until && new Date(wallet.earnings_locked_until) > new Date() && (
+              <div className="mb-4 p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-start gap-2">
+                <Lock className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm text-yellow-500 font-medium">Earnings Locked</p>
+                  <p className="text-xs text-muted-foreground">
+                    New earnings are locked for 72 hours for fraud prevention. 
+                    Unlocks {formatDistanceToNow(new Date(wallet.earnings_locked_until), { addSuffix: true })}.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <div className="flex gap-6 text-sm mb-6">
               <div>

@@ -4,20 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Send, Trash2 } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import CommentReply from "./CommentReply";
 
 interface Comment {
   id: string;
   content: string;
   created_at: string;
   user_id: string;
+  parent_id: string | null;
   profiles: {
     id: string;
     username: string;
     avatar_url: string | null;
   };
+  replies?: Comment[];
 }
 
 interface CommentSheetProps {
@@ -25,6 +28,7 @@ interface CommentSheetProps {
   onOpenChange: (open: boolean) => void;
   postId: string;
   currentUserId?: string;
+  postOwnerId?: string;
   onCommentCountChange?: (count: number) => void;
 }
 
@@ -33,6 +37,7 @@ const CommentSheet = ({
   onOpenChange,
   postId,
   currentUserId,
+  postOwnerId,
   onCommentCountChange,
 }: CommentSheetProps) => {
   const [comments, setComments] = useState<Comment[]>([]);
@@ -57,6 +62,7 @@ const CommentSheet = ({
           content,
           created_at,
           user_id,
+          parent_id,
           profiles:user_id (
             id,
             username,
@@ -67,7 +73,26 @@ const CommentSheet = ({
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setComments(data || []);
+
+      // Organize comments into a tree structure
+      const commentMap = new Map<string, Comment>();
+      const rootComments: Comment[] = [];
+
+      // First pass: create all comments
+      (data || []).forEach((comment: any) => {
+        commentMap.set(comment.id, { ...comment, replies: [] });
+      });
+
+      // Second pass: organize into tree
+      commentMap.forEach((comment) => {
+        if (comment.parent_id && commentMap.has(comment.parent_id)) {
+          commentMap.get(comment.parent_id)!.replies!.push(comment);
+        } else if (!comment.parent_id) {
+          rootComments.push(comment);
+        }
+      });
+
+      setComments(rootComments);
     } catch (error) {
       console.error("Error fetching comments:", error);
     } finally {
@@ -87,31 +112,20 @@ const CommentSheet = ({
 
     try {
       setSubmitting(true);
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("comments")
         .insert({
           post_id: postId,
           user_id: currentUserId,
           content: newComment.trim(),
-        })
-        .select(`
-          id,
-          content,
-          created_at,
-          user_id,
-          profiles:user_id (
-            id,
-            username,
-            avatar_url
-          )
-        `)
-        .single();
+          parent_id: null,
+        });
 
       if (error) throw error;
 
-      setComments((prev) => [...prev, data]);
       setNewComment("");
-      onCommentCountChange?.(comments.length + 1);
+      fetchComments();
+      onCommentCountChange?.((comments.length || 0) + 1);
       toast.success("Comment added!");
     } catch (error: any) {
       toast.error(error.message || "Failed to add comment");
@@ -120,18 +134,40 @@ const CommentSheet = ({
     }
   };
 
+  const handleReply = async (parentId: string, content: string) => {
+    if (!currentUserId) {
+      toast.error("Please log in to reply");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("comments")
+      .insert({
+        post_id: postId,
+        user_id: currentUserId,
+        content,
+        parent_id: parentId,
+      });
+
+    if (error) {
+      toast.error("Failed to add reply");
+      throw error;
+    }
+
+    fetchComments();
+    toast.success("Reply added!");
+  };
+
   const handleDelete = async (commentId: string) => {
     try {
       const { error } = await supabase
         .from("comments")
         .delete()
-        .eq("id", commentId)
-        .eq("user_id", currentUserId);
+        .eq("id", commentId);
 
       if (error) throw error;
 
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
-      onCommentCountChange?.(comments.length - 1);
+      fetchComments();
       toast.success("Comment deleted");
     } catch (error) {
       toast.error("Failed to delete comment");
@@ -162,11 +198,20 @@ const CommentSheet = ({
     return date.toLocaleDateString();
   };
 
+  // Count total comments including replies
+  const countAllComments = (comments: Comment[]): number => {
+    return comments.reduce((total, comment) => {
+      return total + 1 + (comment.replies ? countAllComments(comment.replies) : 0);
+    }, 0);
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[70vh] rounded-t-3xl bg-card border-border">
         <SheetHeader className="pb-4 border-b border-border">
-          <SheetTitle className="text-foreground">Comments</SheetTitle>
+          <SheetTitle className="text-foreground">
+            Comments {comments.length > 0 && `(${countAllComments(comments)})`}
+          </SheetTitle>
         </SheetHeader>
 
         <div className="flex flex-col h-[calc(100%-80px)]">
@@ -182,41 +227,16 @@ const CommentSheet = ({
               </p>
             ) : (
               comments.map((comment) => (
-                <div key={comment.id} className="flex gap-3 group">
-                  <Avatar
-                    className="h-8 w-8 cursor-pointer ring-2 ring-primary/10"
-                    onClick={() => handleProfileClick(comment.user_id)}
-                  >
-                    <AvatarImage src={comment.profiles?.avatar_url || undefined} />
-                    <AvatarFallback className="bg-gradient-primary text-background text-xs">
-                      {comment.profiles?.username?.[0]?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="font-semibold text-sm text-foreground cursor-pointer hover:underline"
-                        onClick={() => handleProfileClick(comment.user_id)}
-                      >
-                        {comment.profiles?.username || "Unknown"}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatTime(comment.created_at)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-foreground break-words">{comment.content}</p>
-                  </div>
-                  {currentUserId === comment.user_id && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                      onClick={() => handleDelete(comment.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
+                <CommentReply
+                  key={comment.id}
+                  comment={comment}
+                  currentUserId={currentUserId}
+                  postOwnerId={postOwnerId}
+                  onReply={handleReply}
+                  onDelete={handleDelete}
+                  onProfileClick={handleProfileClick}
+                  formatTime={formatTime}
+                />
               ))
             )}
           </div>
