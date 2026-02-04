@@ -26,7 +26,7 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import NotFound from "./pages/NotFound";
 import { supabase } from "@/integrations/supabase/client";
-import { PermissionsSetup } from "@/components/PermissionsSetup";
+
 
 const queryClient = new QueryClient();
 
@@ -99,7 +99,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <PermissionsSetup />
+      
       <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>

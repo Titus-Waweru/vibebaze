@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,10 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import Navbar from "@/components/Navbar";
 import { PhoneNumberModal } from "@/components/PhoneNumberModal";
-import { ArrowLeft, Bell, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save, Phone, FileText, Shield, Gift } from "lucide-react";
+import { ArrowLeft, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save, Phone, FileText, Shield } from "lucide-react";
 import ReferralCard from "@/components/ReferralCard";
 import { toast } from "sonner";
 
@@ -32,25 +30,6 @@ const Settings = () => {
   const [canEdit, setCanEdit] = useState(true);
   const [daysUntilEdit, setDaysUntilEdit] = useState(0);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
-
-  const {
-    isSubscribed,
-    isSupported,
-    permission,
-    loading: notificationLoading,
-    subscribe,
-    unsubscribe,
-  } = usePushNotifications(user?.id);
-
-  const isPermissionDenied = permission === 'denied';
-
-  const handleNotificationToggle = async () => {
-    if (isSubscribed) {
-      await unsubscribe();
-    } else {
-      await subscribe();
-    }
-  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -371,45 +350,6 @@ const Settings = () => {
           </CardContent>
         </Card>
 
-        {/* Notification Settings */}
-        <Card className="border-border/50 shadow-card mt-6">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Notifications
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label>Push Notifications</Label>
-                <p className="text-sm text-muted-foreground">
-                  {!isSupported 
-                    ? "Push notifications are not supported on this device"
-                    : isPermissionDenied
-                    ? "Notifications are blocked by your browser"
-                    : "Get notified about new followers, likes, and posts"
-                  }
-                </p>
-              </div>
-              <Switch
-                checked={isSubscribed}
-                onCheckedChange={handleNotificationToggle}
-                disabled={!isSupported || notificationLoading || isPermissionDenied}
-              />
-            </div>
-            {isPermissionDenied && (
-              <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                <p className="text-sm text-destructive font-medium mb-1">Notifications Blocked</p>
-                <p className="text-xs text-muted-foreground">
-                  To enable notifications, click the lock/info icon in your browser's address bar, 
-                  find "Notifications" and change it to "Allow", then refresh the page.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Creator Wallet */}
         <Card 
           className="border-border/50 shadow-card mt-6 cursor-pointer hover:border-primary/50 transition-colors"
@@ -498,13 +438,12 @@ const Settings = () => {
         </Card>
       </div>
 
-      {/* Phone Number Modal */}
       {user && (
-        <PhoneNumberModal
+        <PhoneNumberModal 
           open={showPhoneModal}
           onOpenChange={setShowPhoneModal}
           userId={user.id}
-          onSuccess={fetchProfile}
+          onSuccess={() => fetchProfile()}
         />
       )}
     </div>
