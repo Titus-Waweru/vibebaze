@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,9 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
-import { Image, Video, Music, FileText, Upload, X } from "lucide-react";
+import CameraCapture from "@/components/CameraCapture";
+import HashtagSuggestions from "@/components/HashtagSuggestions";
+import { Image, Video, Music, FileText, Upload, X, Camera } from "lucide-react";
 
 const CreatePost = () => {
   const { user } = useAuth();
@@ -21,11 +23,35 @@ const CreatePost = () => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-add VibeBaze tag on mount
+  useEffect(() => {
+    if (!selectedHashtags.includes("VibeBaze")) {
+      setSelectedHashtags(["VibeBaze"]);
+    }
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
     }
+  };
+
+  const handleCameraCapture = (capturedFile: File, type: "image" | "video") => {
+    setFile(capturedFile);
+    setPostType(type);
+    setShowCamera(false);
+  };
+
+  const handleToggleHashtag = (tag: string) => {
+    setSelectedHashtags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
   };
 
   const uploadFile = async (file: File) => {
@@ -35,7 +61,6 @@ const CreatePost = () => {
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate progress for better UX (Supabase doesn't provide native progress)
     const progressInterval = setInterval(() => {
       setUploadProgress(prev => {
         if (prev >= 90) {
@@ -102,6 +127,7 @@ const CreatePost = () => {
         caption: caption || null,
         media_url: mediaUrl,
         is_private: false,
+        hashtags: selectedHashtags.length > 0 ? selectedHashtags : null,
       });
 
       if (error) throw error;
@@ -168,12 +194,28 @@ const CreatePost = () => {
                 </div>
               </div>
 
-              {/* File Upload */}
+              {/* File Upload & Camera */}
               {postType !== "text" && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <Label>Upload {postType}</Label>
+                  
+                  {/* Camera Button (for image/video) */}
+                  {(postType === "image" || postType === "video") && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setShowCamera(true)}
+                      className="w-full gap-2 border-primary/50 hover:bg-primary/10"
+                    >
+                      <Camera className="h-5 w-5" />
+                      {postType === "image" ? "Take Photo" : "Record Video"}
+                    </Button>
+                  )}
+
+                  {/* File Upload Area */}
                   <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors relative">
                     <Input
+                      ref={fileInputRef}
                       type="file"
                       accept={
                         postType === "image"
@@ -204,7 +246,7 @@ const CreatePost = () => {
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">
-                          Click to upload {postType}
+                          Or click to upload from device
                         </p>
                       )}
                     </label>
@@ -240,6 +282,14 @@ const CreatePost = () => {
                 </p>
               </div>
 
+              {/* Hashtag Suggestions */}
+              <HashtagSuggestions
+                caption={caption}
+                mediaType={postType}
+                selectedHashtags={selectedHashtags}
+                onToggleHashtag={handleToggleHashtag}
+              />
+
               {/* Submit */}
               <Button
                 type="submit"
@@ -252,6 +302,14 @@ const CreatePost = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Camera Modal */}
+      <CameraCapture
+        open={showCamera}
+        onClose={() => setShowCamera(false)}
+        onCapture={handleCameraCapture}
+        mode={postType === "video" ? "video" : "image"}
+      />
     </div>
   );
 };
