@@ -726,15 +726,23 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string | null
+          email_verified: boolean
+          email_verified_at: string | null
           followers_count: number | null
           following_count: number | null
           full_name: string | null
           id: string
+          last_otp_request: string | null
           last_profile_update: string | null
           likes_received: number | null
+          otp_attempts: number
+          otp_expires_at: string | null
+          otp_hash: string | null
           phone_number: string | null
           posts_count: number | null
           referral_code: string | null
+          reset_token_expires_at: string | null
+          reset_token_hash: string | null
           updated_at: string | null
           username: string
         }
@@ -742,15 +750,23 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          email_verified?: boolean
+          email_verified_at?: string | null
           followers_count?: number | null
           following_count?: number | null
           full_name?: string | null
           id: string
+          last_otp_request?: string | null
           last_profile_update?: string | null
           likes_received?: number | null
+          otp_attempts?: number
+          otp_expires_at?: string | null
+          otp_hash?: string | null
           phone_number?: string | null
           posts_count?: number | null
           referral_code?: string | null
+          reset_token_expires_at?: string | null
+          reset_token_hash?: string | null
           updated_at?: string | null
           username: string
         }
@@ -758,15 +774,23 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string | null
+          email_verified?: boolean
+          email_verified_at?: string | null
           followers_count?: number | null
           following_count?: number | null
           full_name?: string | null
           id?: string
+          last_otp_request?: string | null
           last_profile_update?: string | null
           likes_received?: number | null
+          otp_attempts?: number
+          otp_expires_at?: string | null
+          otp_hash?: string | null
           phone_number?: string | null
           posts_count?: number | null
           referral_code?: string | null
+          reset_token_expires_at?: string | null
+          reset_token_hash?: string | null
           updated_at?: string | null
           username?: string
         }
@@ -1289,6 +1313,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_otp_rate_limit: { Args: { p_user_id: string }; Returns: boolean }
       check_rate_limit: {
         Args: {
           p_action_type: string
@@ -1317,6 +1342,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_otp_attempts: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       increment_rate_limit: {
         Args: { p_action_type: string; p_user_id: string }
         Returns: undefined
@@ -1343,6 +1372,14 @@ export type Database = {
         Returns: boolean
       }
       validate_referral: { Args: { p_referred_id: string }; Returns: boolean }
+      verify_otp: {
+        Args: { p_otp_hash: string; p_user_id: string }
+        Returns: boolean
+      }
+      verify_reset_token: {
+        Args: { p_email: string; p_token_hash: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
