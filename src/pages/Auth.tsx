@@ -11,6 +11,7 @@ import { signIn, signUp } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
 import { Gift } from "lucide-react";
+import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -98,6 +99,9 @@ const Auth = () => {
       return;
     }
 
+    // Generate device fingerprint for abuse prevention
+    const deviceFingerprint = generateDeviceFingerprint();
+
     // Handle referral if code exists
     if (referralCode && data?.user) {
       try {
@@ -109,15 +113,28 @@ const Auth = () => {
           .single();
 
         if (referrerProfile && referrerProfile.id !== data.user.id) {
-          // Create referral record
-          await supabase.from("referrals").insert({
-            referrer_id: referrerProfile.id,
-            referred_id: data.user.id,
-            referral_code: referralCode.toUpperCase(),
-            status: "pending",
-          });
-          
-          toast.success("Referral applied! Your friend will earn points when you verify.");
+          // Check for referral abuse
+          const { data: abuseCheck } = await supabase
+            .rpc("check_referral_abuse", {
+              p_referrer_id: referrerProfile.id,
+              p_ip_address: null, // IP tracked server-side if needed
+              p_device_fingerprint: deviceFingerprint,
+            });
+
+          if (!abuseCheck) {
+            // Create referral record with abuse prevention data
+            await supabase.from("referrals").insert({
+              referrer_id: referrerProfile.id,
+              referred_id: data.user.id,
+              referral_code: referralCode.toUpperCase(),
+              status: "pending",
+              device_fingerprint: deviceFingerprint,
+            });
+            
+            toast.success("Referral applied! Your friend will earn points when you verify.");
+          } else {
+            console.warn("Referral flagged as potential abuse");
+          }
         }
       } catch (err) {
         console.error("Referral error:", err);
@@ -125,12 +142,23 @@ const Auth = () => {
       }
     }
 
-    // Send OTP for email verification
+    // Send OTP for email verification AND welcome email
     if (data?.user) {
       try {
+        // Send OTP
         await supabase.functions.invoke("send-otp", {
           body: { userId: data.user.id, email: signupData.email, type: "verification" },
         });
+
+        // Send welcome email (async, don't wait)
+        supabase.functions.invoke("send-welcome-email", {
+          body: {
+            email: signupData.email,
+            username: signupData.username,
+            fullName: signupData.fullName,
+            referredBy: referralCode || undefined,
+          },
+        }).catch((e) => console.error("Welcome email error:", e));
         
         setLoading(false);
         toast.success("Account created! Please verify your email.");

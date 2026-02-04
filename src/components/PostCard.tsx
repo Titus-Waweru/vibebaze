@@ -353,6 +353,7 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
         onOpenChange={setCommentSheetOpen}
         postId={post.id}
         currentUserId={currentUserId}
+        postOwnerId={post.user_id}
         onCommentCountChange={setCommentsCount}
       />
     </>
