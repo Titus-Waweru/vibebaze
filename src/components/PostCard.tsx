@@ -1,6 +1,7 @@
-import { Heart, MessageCircle, Share2, Bookmark, Link2, Download } from "lucide-react";
+import { Heart, MessageCircle, Share2, Bookmark, Link2, Download, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +11,15 @@ import VideoPlayer from "./VideoPlayer";
 import TipButton from "./TipButton";
 import { useWallet } from "@/hooks/useWallet";
 import { downloadWithWatermark } from "@/utils/downloadWithWatermark";
+
+// Check if post is less than 7 days old
+const isNewPost = (createdAt: string): boolean => {
+  const postDate = new Date(createdAt);
+  const now = new Date();
+  const diffTime = now.getTime() - postDate.getTime();
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  return diffDays <= 7;
+};
 
 interface PostCardProps {
   post: {
@@ -208,15 +218,25 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
             </div>
           </div>
           
-          {/* Direct link button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleCopyLink}
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
-          >
-            <Link2 className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* NEW Badge */}
+            {isNewPost(post.created_at) && (
+              <Badge variant="secondary" className="bg-gradient-primary text-primary-foreground gap-1 text-xs px-2 py-0.5">
+                <Sparkles className="h-3 w-3" />
+                NEW
+              </Badge>
+            )}
+            
+            {/* Direct link button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleCopyLink}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            >
+              <Link2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Media */}

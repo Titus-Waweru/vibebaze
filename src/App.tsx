@@ -22,6 +22,7 @@ import Wallet from "./pages/Wallet";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import CreatorsSchool from "./pages/CreatorsSchool";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { supabase } from "@/integrations/supabase/client";
 import { PermissionsSetup } from "@/components/PermissionsSetup";
@@ -68,6 +69,7 @@ const AppRoutes = () => {
         )
       } />
       <Route path="/auth" element={<Auth />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/feed" element={<Feed />} />
       <Route path="/create" element={<CreatePost />} />
       <Route path="/profile" element={<Profile />} />

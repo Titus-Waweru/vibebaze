@@ -1,5 +1,5 @@
 import Navbar from "@/components/Navbar";
-import { Bell, Heart, MessageCircle, UserPlus, TrendingUp, Image, Video, Music, FileText } from "lucide-react";
+import { Bell, Heart, MessageCircle, UserPlus, TrendingUp, Image, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 interface Notification {
   id: string;
@@ -102,6 +103,23 @@ const Notifications = () => {
       .eq("is_read", false);
     
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+  };
+
+  const deleteNotification = async (notificationId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const { error } = await supabase
+      .from("notifications")
+      .delete()
+      .eq("id", notificationId);
+    
+    if (error) {
+      toast.error("Failed to delete notification");
+      return;
+    }
+    
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    toast.success("Notification deleted");
   };
 
   const handleNotificationClick = (notification: Notification) => {
@@ -220,9 +238,19 @@ const Notifications = () => {
                       {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
                     </p>
                   </div>
-                  {!notification.is_read && (
-                    <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-2" />
-                  )}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {!notification.is_read && (
+                      <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => deleteNotification(notification.id, e)}
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
