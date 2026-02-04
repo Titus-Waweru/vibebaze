@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 // VAPID key from Firebase Console -> Project Settings -> Cloud Messaging -> Web Push certificates
-// This should be generated from the VibeBaze Firebase project
-const VAPID_KEY = "BFrNZGJrQMzCvC5LfDaKqxVJL9YKvRJcF8pSxqkqjJhEf8vYzRkPnZpHmGcTjQxLsKwNvDcXfAqBzCeYgHiJkL0";
+// This MUST be from the vibebaze-f08b2 Firebase project
+// Generate it at: Firebase Console > vibebaze-f08b2 > Project Settings > Cloud Messaging > Web Push certificates
+const VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 
 export const usePushNotifications = () => {
   const { user } = useAuth();
