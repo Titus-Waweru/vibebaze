@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 
+// VibeBaze Firebase project configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBelWjvdwophP69GbZ9yHCWkPUfaZmrCFY",
   authDomain: "vibebaze-f08b2.firebaseapp.com",

@@ -3,12 +3,15 @@ import { initializeMessaging, getMessagingInstance, getToken, onMessage } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 // VAPID key from Firebase Console -> Project Settings -> Cloud Messaging -> Web Push certificates
+// This should be generated from the VibeBaze Firebase project
 const VAPID_KEY = "BFrNZGJrQMzCvC5LfDaKqxVJL9YKvRJcF8pSxqkqjJhEf8vYzRkPnZpHmGcTjQxLsKwNvDcXfAqBzCeYgHiJkL0";
 
 export const usePushNotifications = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isSupported, setIsSupported] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +38,9 @@ export const usePushNotifications = () => {
           .maybeSingle();
 
         setIsEnabled(!!data);
+        if (data) {
+          setFcmToken(data.endpoint);
+        }
       }
 
       setIsLoading(false);
@@ -42,6 +48,20 @@ export const usePushNotifications = () => {
 
     checkSupport();
   }, [user]);
+
+  // Handle notification click navigation
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === "NOTIFICATION_CLICKED" && event.data?.url) {
+        navigate(event.data.url);
+      }
+    };
+
+    navigator.serviceWorker?.addEventListener("message", handleMessage);
+    return () => {
+      navigator.serviceWorker?.removeEventListener("message", handleMessage);
+    };
+  }, [navigate]);
 
   // Register service worker and get FCM token
   const enableNotifications = useCallback(async () => {
@@ -66,7 +86,7 @@ export const usePushNotifications = () => {
         scope: "/"
       });
 
-      console.log("Service Worker registered:", registration);
+      console.log("[VibeBaze] Service Worker registered:", registration);
 
       // Wait for the service worker to be ready
       await navigator.serviceWorker.ready;
@@ -91,7 +111,7 @@ export const usePushNotifications = () => {
         return false;
       }
 
-      console.log("FCM Token obtained:", token);
+      console.log("[VibeBaze] FCM Token obtained:", token.substring(0, 20) + "...");
       setFcmToken(token);
 
       // Store token in database (using endpoint field for FCM token)
@@ -100,14 +120,14 @@ export const usePushNotifications = () => {
         .upsert({
           user_id: user.id,
           endpoint: token,
-          p256dh: "fcm", // Placeholder for FCM
-          auth: "fcm"    // Placeholder for FCM
+          p256dh: "fcm-v1", // Marker for FCM V1 API
+          auth: "fcm-v1"    // Marker for FCM V1 API
         }, {
           onConflict: "user_id"
         });
 
       if (error) {
-        console.error("Error saving FCM token:", error);
+        console.error("[VibeBaze] Error saving FCM token:", error);
         toast.error("Failed to save notification settings");
         setIsLoading(false);
         return false;
@@ -118,7 +138,7 @@ export const usePushNotifications = () => {
       setIsLoading(false);
       return true;
     } catch (error) {
-      console.error("Error enabling notifications:", error);
+      console.error("[VibeBaze] Error enabling notifications:", error);
       toast.error("Failed to enable notifications");
       setIsLoading(false);
       return false;
@@ -139,7 +159,7 @@ export const usePushNotifications = () => {
         .eq("user_id", user.id);
 
       if (error) {
-        console.error("Error removing FCM token:", error);
+        console.error("[VibeBaze] Error removing FCM token:", error);
         toast.error("Failed to disable notifications");
         setIsLoading(false);
         return false;
@@ -159,12 +179,41 @@ export const usePushNotifications = () => {
       setIsLoading(false);
       return true;
     } catch (error) {
-      console.error("Error disabling notifications:", error);
+      console.error("[VibeBaze] Error disabling notifications:", error);
       toast.error("Failed to disable notifications");
       setIsLoading(false);
       return false;
     }
   }, [user]);
+
+  // Refresh token if needed
+  const refreshToken = useCallback(async () => {
+    if (!user || !isEnabled) return;
+
+    try {
+      const messaging = getMessagingInstance();
+      if (!messaging) return;
+
+      const registration = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
+      if (!registration) return;
+
+      const newToken = await getToken(messaging, {
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: registration
+      });
+
+      if (newToken && newToken !== fcmToken) {
+        console.log("[VibeBaze] Token refreshed");
+        await supabase
+          .from("push_subscriptions")
+          .update({ endpoint: newToken })
+          .eq("user_id", user.id);
+        setFcmToken(newToken);
+      }
+    } catch (error) {
+      console.error("[VibeBaze] Error refreshing token:", error);
+    }
+  }, [user, isEnabled, fcmToken]);
 
   // Listen for foreground messages
   useEffect(() => {
@@ -173,14 +222,14 @@ export const usePushNotifications = () => {
       if (!messaging || !isEnabled) return;
 
       const unsubscribe = onMessage(messaging, (payload) => {
-        console.log("Foreground message received:", payload);
+        console.log("[VibeBaze] Foreground message received:", payload);
         
         // Show toast for foreground notifications
         toast(payload.notification?.title || "New Notification", {
           description: payload.notification?.body,
           action: payload.data?.url ? {
             label: "View",
-            onClick: () => window.location.href = payload.data?.url
+            onClick: () => navigate(payload.data?.url || "/feed")
           } : undefined
         });
       });
@@ -189,7 +238,15 @@ export const usePushNotifications = () => {
     };
 
     setupForegroundListener();
-  }, [isEnabled]);
+  }, [isEnabled, navigate]);
+
+  // Periodically refresh token
+  useEffect(() => {
+    if (!isEnabled) return;
+
+    const interval = setInterval(refreshToken, 24 * 60 * 60 * 1000); // Every 24 hours
+    return () => clearInterval(interval);
+  }, [isEnabled, refreshToken]);
 
   return {
     isSupported,
@@ -197,6 +254,30 @@ export const usePushNotifications = () => {
     isLoading,
     fcmToken,
     enableNotifications,
-    disableNotifications
+    disableNotifications,
+    refreshToken
   };
+};
+
+// Utility function to send a push notification (for use in other hooks)
+export const sendPushNotification = async (options: {
+  userId?: string;
+  userIds?: string[];
+  broadcast?: boolean;
+  title: string;
+  body: string;
+  url?: string;
+  tag?: string;
+}) => {
+  try {
+    const { data, error } = await supabase.functions.invoke("send-push-notification", {
+      body: options
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error("[VibeBaze] Error sending push notification:", error);
+    throw error;
+  }
 };

@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Bell, Send, Loader2, CheckCircle2, AlertCircle, Users } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Bell, Send, Loader2, CheckCircle2, AlertCircle, Users, Shield } from "lucide-react";
+import { broadcastNotification } from "@/lib/notificationService";
 import { toast } from "sonner";
 
 const AdminMessagingTab = () => {
@@ -18,6 +18,7 @@ const AdminMessagingTab = () => {
     sent: number;
     failed: number;
     total: number;
+    tokensRemoved?: number;
   } | null>(null);
 
   const handleBroadcast = async () => {
@@ -30,25 +31,18 @@ const AdminMessagingTab = () => {
     setLastResult(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("send-push-notification", {
-        body: {
-          broadcast: true,
-          title: title.trim(),
-          body: body.trim(),
-          url: "/notifications"
-        }
-      });
-
-      if (error) throw error;
-
-      setLastResult(data);
+      const result = await broadcastNotification(title.trim(), body.trim());
       
-      if (data.sent > 0) {
-        toast.success(`Notification sent to ${data.sent} users!`);
+      setLastResult(result);
+      
+      if (result.sent > 0) {
+        toast.success(`Notification sent to ${result.sent} users!`);
         setTitle("");
         setBody("");
-      } else {
+      } else if (result.total === 0) {
         toast.info("No users with notifications enabled");
+      } else {
+        toast.error("Failed to send notifications");
       }
     } catch (error) {
       console.error("Error sending broadcast:", error);
@@ -134,7 +128,7 @@ const AdminMessagingTab = () => {
                 {lastResult.sent > 0 ? "Broadcast Sent" : "Broadcast Failed"}
               </AlertTitle>
               <AlertDescription>
-                <div className="flex items-center gap-4 mt-2">
+                <div className="flex items-center gap-4 mt-2 flex-wrap">
                   <div className="flex items-center gap-1">
                     <Users className="h-4 w-4" />
                     <span>{lastResult.total} subscribers</span>
@@ -143,6 +137,11 @@ const AdminMessagingTab = () => {
                   {lastResult.failed > 0 && (
                     <div className="text-destructive">✗ {lastResult.failed} failed</div>
                   )}
+                  {lastResult.tokensRemoved && lastResult.tokensRemoved > 0 && (
+                    <div className="text-muted-foreground">
+                      🗑️ {lastResult.tokensRemoved} invalid tokens removed
+                    </div>
+                  )}
                 </div>
               </AlertDescription>
             </Alert>
@@ -150,12 +149,15 @@ const AdminMessagingTab = () => {
         </CardContent>
       </Card>
 
-      {/* Setup Info */}
+      {/* FCM V1 API Info */}
       <Card className="border-border/50 shadow-card">
         <CardHeader>
-          <CardTitle className="text-lg">FCM Configuration</CardTitle>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            FCM V1 API Configuration
+          </CardTitle>
           <CardDescription>
-            Firebase Cloud Messaging is configured for VibeBaze
+            Firebase Cloud Messaging is configured using the modern V1 API
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -164,14 +166,20 @@ const AdminMessagingTab = () => {
             <AlertTitle>Setup Complete</AlertTitle>
             <AlertDescription className="space-y-2">
               <p>
-                Push notifications are configured and ready to use. Users can enable
-                notifications from their Settings page.
+                Push notifications are configured using Firebase V1 API with service account authentication.
+                This is the modern, recommended approach by Google.
               </p>
               <ul className="list-disc list-inside space-y-1 mt-2 text-sm text-muted-foreground">
                 <li>Firebase project: vibebaze-f08b2</li>
+                <li>Authentication: Service Account (OAuth2)</li>
+                <li>API: FCM V1 (https://fcm.googleapis.com/v1/...)</li>
                 <li>Service worker: /firebase-messaging-sw.js</li>
                 <li>Tokens stored in: push_subscriptions table</li>
               </ul>
+              <p className="mt-3 text-sm">
+                <strong>Benefits of V1 API:</strong> Better security, no legacy server keys,
+                automatic token management, and improved delivery reliability.
+              </p>
             </AlertDescription>
           </Alert>
         </CardContent>
