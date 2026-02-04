@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,14 +9,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import Navbar from "@/components/Navbar";
 import { PhoneNumberModal } from "@/components/PhoneNumberModal";
-import { ArrowLeft, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save, Phone, FileText, Shield } from "lucide-react";
+import { ArrowLeft, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save, Phone, FileText, Shield, Bell } from "lucide-react";
 import ReferralCard from "@/components/ReferralCard";
 import { toast } from "sonner";
 
 const Settings = () => {
   const { user, loading: authLoading } = useAuth();
+  const { 
+    isSupported: notificationsSupported, 
+    isEnabled: notificationsEnabled, 
+    isLoading: notificationsLoading,
+    enableNotifications,
+    disableNotifications 
+  } = usePushNotifications();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -30,6 +39,14 @@ const Settings = () => {
   const [canEdit, setCanEdit] = useState(true);
   const [daysUntilEdit, setDaysUntilEdit] = useState(0);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
+
+  const handleNotificationToggle = async (checked: boolean) => {
+    if (checked) {
+      await enableNotifications();
+    } else {
+      await disableNotifications();
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -395,6 +412,33 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Push Notifications */}
+        {notificationsSupported && (
+          <Card className="border-border/50 shadow-card mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Notifications
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="font-medium text-foreground">Push Notifications</p>
+                  <p className="text-sm text-muted-foreground">
+                    Get notified about likes, comments, follows, and tips
+                  </p>
+                </div>
+                <Switch
+                  checked={notificationsEnabled}
+                  onCheckedChange={handleNotificationToggle}
+                  disabled={notificationsLoading}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Referral Section */}
         {user && (
