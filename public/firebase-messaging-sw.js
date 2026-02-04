@@ -1,6 +1,7 @@
 importScripts("https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js");
 
+// VibeBaze Firebase project configuration
 firebase.initializeApp({
   apiKey: "AIzaSyBelWjvdwophP69GbZ9yHCWkPUfaZmrCFY",
   authDomain: "vibebaze-f08b2.firebaseapp.com",
@@ -15,7 +16,7 @@ const messaging = firebase.messaging();
 
 // Handle background messages
 messaging.onBackgroundMessage(function(payload) {
-  console.log("[firebase-messaging-sw.js] Received background message:", payload);
+  console.log("[VibeBaze] Received background message:", payload);
   
   const notificationTitle = payload.notification?.title || "VibeBaze";
   const notificationOptions = {
@@ -26,7 +27,9 @@ messaging.onBackgroundMessage(function(payload) {
     data: payload.data || {},
     actions: [
       { action: "open", title: "Open VibeBaze" }
-    ]
+    ],
+    vibrate: [200, 100, 200],
+    requireInteraction: true
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);
@@ -34,7 +37,7 @@ messaging.onBackgroundMessage(function(payload) {
 
 // Handle notification click
 self.addEventListener("notificationclick", function(event) {
-  console.log("[firebase-messaging-sw.js] Notification clicked:", event);
+  console.log("[VibeBaze] Notification clicked:", event);
   
   event.notification.close();
   
@@ -59,4 +62,35 @@ self.addEventListener("notificationclick", function(event) {
       }
     })
   );
+});
+
+// Handle push events directly (for data-only messages)
+self.addEventListener("push", function(event) {
+  if (!event.data) return;
+  
+  try {
+    const payload = event.data.json();
+    console.log("[VibeBaze] Push event received:", payload);
+    
+    // If there's no notification field, this is a data-only message
+    if (!payload.notification && payload.data) {
+      const notificationOptions = {
+        body: payload.data.body || "You have a new notification",
+        icon: "/pwa-192x192.png",
+        badge: "/pwa-192x192.png",
+        tag: payload.data.tag || "vibebaze-notification",
+        data: payload.data,
+        vibrate: [200, 100, 200]
+      };
+      
+      event.waitUntil(
+        self.registration.showNotification(
+          payload.data.title || "VibeBaze",
+          notificationOptions
+        )
+      );
+    }
+  } catch (e) {
+    console.error("[VibeBaze] Error processing push event:", e);
+  }
 });
