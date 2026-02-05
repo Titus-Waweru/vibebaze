@@ -1,39 +1,69 @@
+// VibeBaze Firebase Messaging Service Worker
+// FCM V1 API - Receives config from main thread
+
 importScripts("https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.7.0/firebase-messaging-compat.js");
 
-// VibeBaze Firebase project configuration
-firebase.initializeApp({
-  apiKey: "AIzaSyBelWjvdwophP69GbZ9yHCWkPUfaZmrCFY",
-  authDomain: "vibebaze-f08b2.firebaseapp.com",
-  projectId: "vibebaze-f08b2",
-  storageBucket: "vibebaze-f08b2.firebasestorage.app",
-  messagingSenderId: "122281450366",
-  appId: "1:122281450366:web:0158023505555e903fb12f",
-  measurementId: "G-GDVVV4BY89"
-});
+// Firebase will be initialized when config is received
+let messaging = null;
+let isInitialized = false;
 
-const messaging = firebase.messaging();
-
-// Handle background messages
-messaging.onBackgroundMessage(function(payload) {
-  console.log("[VibeBaze] Received background message:", payload);
+// Initialize Firebase with provided config
+function initializeFirebase(config) {
+  if (isInitialized) return;
   
-  const notificationTitle = payload.notification?.title || "VibeBaze";
-  const notificationOptions = {
-    body: payload.notification?.body || "You have a new notification",
-    icon: "/pwa-192x192.png",
-    badge: "/pwa-192x192.png",
-    tag: payload.data?.tag || "vibebaze-notification",
-    data: payload.data || {},
-    actions: [
-      { action: "open", title: "Open VibeBaze" }
-    ],
-    vibrate: [200, 100, 200],
-    requireInteraction: true
-  };
+  try {
+    firebase.initializeApp(config);
+    messaging = firebase.messaging();
+    isInitialized = true;
+    console.log("[VibeBaze] Service Worker: Firebase initialized");
+    
+    // Set up background message handler after initialization
+    setupBackgroundMessageHandler();
+  } catch (error) {
+    console.error("[VibeBaze] Service Worker: Failed to initialize Firebase", error);
+  }
+}
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+// Listen for config from main thread
+self.addEventListener("message", function(event) {
+  if (event.data && event.data.type === "FIREBASE_CONFIG") {
+    console.log("[VibeBaze] Service Worker: Received Firebase config");
+    initializeFirebase(event.data.config);
+  }
 });
+
+// Try to get config from cache on activation
+self.addEventListener("activate", function(event) {
+  console.log("[VibeBaze] Service Worker: Activated");
+  // Claim clients immediately
+  event.waitUntil(self.clients.claim());
+});
+
+// Setup background message handler
+function setupBackgroundMessageHandler() {
+  if (!messaging) return;
+  
+  messaging.onBackgroundMessage(function(payload) {
+    console.log("[VibeBaze] Received background message:", payload);
+    
+    const notificationTitle = payload.notification?.title || "VibeBaze";
+    const notificationOptions = {
+      body: payload.notification?.body || "You have a new notification",
+      icon: "/pwa-192x192.png",
+      badge: "/pwa-192x192.png",
+      tag: payload.data?.tag || "vibebaze-notification",
+      data: payload.data || {},
+      actions: [
+        { action: "open", title: "Open VibeBaze" }
+      ],
+      vibrate: [200, 100, 200],
+      requireInteraction: true
+    };
+
+    self.registration.showNotification(notificationTitle, notificationOptions);
+  });
+}
 
 // Handle notification click
 self.addEventListener("notificationclick", function(event) {
