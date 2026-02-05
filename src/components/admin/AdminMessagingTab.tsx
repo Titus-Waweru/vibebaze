@@ -170,7 +170,7 @@ const AdminMessagingTab = () => {
                 This is the modern, recommended approach by Google.
               </p>
               <ul className="list-disc list-inside space-y-1 mt-2 text-sm text-muted-foreground">
-                <li>Firebase project: vibebaze-f08b2</li>
+                <li>Firebase project: Configured via environment secrets</li>
                 <li>Authentication: Service Account (OAuth2)</li>
                 <li>API: FCM V1 (https://fcm.googleapis.com/v1/...)</li>
                 <li>Service worker: /firebase-messaging-sw.js</li>

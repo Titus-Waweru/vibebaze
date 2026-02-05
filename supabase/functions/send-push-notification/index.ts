@@ -157,12 +157,12 @@ serve(async (req) => {
     // Firebase Service Account credentials
     const fcmClientEmail = Deno.env.get("FCM_CLIENT_EMAIL");
     const fcmPrivateKey = Deno.env.get("FCM_PRIVATE_KEY");
-    const fcmProjectId = "vibebaze-f08b2"; // Firebase project ID
+    const fcmProjectId = Deno.env.get("VITE_FIREBASE_PROJECT_ID"); // Firebase project ID from secrets
 
-    if (!fcmClientEmail || !fcmPrivateKey) {
-      console.error("FCM service account credentials not configured");
+    if (!fcmClientEmail || !fcmPrivateKey || !fcmProjectId) {
+      console.error("FCM service account credentials or project ID not configured");
       return new Response(
-        JSON.stringify({ error: "Push notifications not configured - missing service account credentials" }),
+        JSON.stringify({ error: "Push notifications not configured - missing service account credentials or project ID" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
