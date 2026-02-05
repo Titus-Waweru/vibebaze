@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
-import { initializeMessaging, getMessagingInstance, getToken, onMessage } from "@/lib/firebase";
+import { initializeMessaging, getMessagingInstance, getToken, onMessage, getFirebaseConfig } from "@/lib/firebase";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 // VAPID key from Firebase Console -> Project Settings -> Cloud Messaging -> Web Push certificates
-// This is the public key for vibebaze-f08b2 Firebase project
-const VAPID_KEY = "BGxs54y4wScaEd3stiS8_V-UKoapIg4XuuTSdTbdcu0717HqjLzHXdBenN7jhVVuvOS-6EW1T0spJmZ63TotsHQ";
+// Value comes from environment variable
+const VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
 
 export const usePushNotifications = () => {
   const { user } = useAuth();
@@ -82,14 +82,25 @@ export const usePushNotifications = () => {
       }
 
       // Register the service worker
-      const registration = await navigator.serviceWorker.register("/firebase-messaging-sw.js", {
-        scope: "/"
-      });
+      // Pass Firebase config to the service worker via query params or postMessage
+      const registration = await navigator.serviceWorker.register(
+        `/firebase-messaging-sw.js`,
+        { scope: "/" }
+      );
 
       console.log("[VibeBaze] Service Worker registered:", registration);
 
       // Wait for the service worker to be ready
       await navigator.serviceWorker.ready;
+
+      // Send Firebase config to the service worker
+      const firebaseConfig = getFirebaseConfig();
+      if (registration.active) {
+        registration.active.postMessage({
+          type: "FIREBASE_CONFIG",
+          config: firebaseConfig
+        });
+      }
 
       // Initialize Firebase Messaging
       const messaging = await initializeMessaging();
