@@ -131,30 +131,26 @@ export const useWallet = (userId: string | undefined) => {
     }
 
     try {
-      // Get platform fee percentage
-      const { data: settings } = await supabase
-        .from("platform_settings")
-        .select("setting_value")
-        .eq("setting_key", "platform_fee_percentage")
-        .single();
-
-      const feePercentage = settings?.setting_value ? Number(settings.setting_value) : 10;
-      const platformFee = (amount * feePercentage) / 100;
-      const netAmount = amount - platformFee;
-
-      const { error } = await supabase.from("transactions").insert({
-        sender_id: userId,
-        receiver_id: creatorId,
-        post_id: postId || null,
-        amount,
-        platform_fee: platformFee,
-        net_amount: netAmount,
-        transaction_type: "tip",
-        status: "completed", // For now, tips are instant
-        description: postId ? "Tip for post" : "Direct tip",
+      // Use the secure process_transfer RPC which handles balance checks, fees, and wallet updates atomically
+      const { data: txId, error } = await supabase.rpc("process_transfer", {
+        p_sender_id: userId,
+        p_receiver_id: creatorId,
+        p_amount: amount,
+        p_post_id: postId || undefined,
+        p_transaction_type: "tip" as const,
+        p_description: postId ? "Tip for post" : "Direct tip",
       });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("Insufficient balance")) {
+          toast.error("Insufficient wallet balance. Fund your wallet first.");
+        } else if (error.message.includes("frozen")) {
+          toast.error("Your wallet is frozen. Contact support.");
+        } else {
+          throw error;
+        }
+        return false;
+      }
 
       toast.success(`Sent KSh ${amount} tip!`);
       
@@ -194,8 +190,13 @@ export const useWallet = (userId: string | undefined) => {
   const requestWithdrawal = useCallback(async (amount: number) => {
     if (!userId || !wallet) return false;
 
-    if (amount < 50) {
-      toast.error("Minimum withdrawal is KSh 50");
+    if (amount < 1000) {
+      toast.error("Minimum withdrawal is KSh 1,000");
+      return false;
+    }
+
+    if (!wallet.is_verified && amount > 5000) {
+      toast.error("Verify your account to withdraw more than KSh 5,000");
       return false;
     }
 

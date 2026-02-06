@@ -85,8 +85,8 @@ const Wallet = () => {
 
   const handleWithdraw = async () => {
     const amount = parseFloat(withdrawAmount);
-    if (isNaN(amount) || amount < 50) {
-      toast.error("Minimum withdrawal is KSh 50");
+    if (isNaN(amount) || amount < 1000) {
+      toast.error("Minimum withdrawal is KSh 1,000");
       return;
     }
 
@@ -376,7 +376,7 @@ const Wallet = () => {
           <DialogHeader>
             <DialogTitle>Withdraw to M-PESA</DialogTitle>
             <DialogDescription>
-              Enter the amount you want to withdraw. Minimum KSh 50.
+              Enter the amount you want to withdraw. Minimum KSh 1,000.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -387,7 +387,7 @@ const Wallet = () => {
                 placeholder="Enter amount"
                 value={withdrawAmount}
                 onChange={(e) => setWithdrawAmount(e.target.value)}
-                min={50}
+                min={1000}
                 max={wallet?.available_balance || 0}
               />
               <p className="text-xs text-muted-foreground">
@@ -397,6 +397,11 @@ const Wallet = () => {
             <div className="p-3 rounded-lg bg-muted/50">
               <p className="text-sm text-muted-foreground">
                 Sending to: <span className="font-medium text-foreground">{wallet?.mpesa_phone}</span>
+              </p>
+            </div>
+            <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+              <p className="text-sm text-yellow-500">
+                ⏳ Withdrawal submitted requests take up to 72 hours for admin approval.
               </p>
             </div>
           </div>

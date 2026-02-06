@@ -429,6 +429,11 @@ const Settings = () => {
                   <p className="text-sm text-muted-foreground">
                     Get notified about likes, comments, follows, and tips
                   </p>
+                  {"Notification" in window && Notification.permission === "denied" && !notificationsEnabled && (
+                    <p className="text-xs text-destructive mt-1">
+                      Blocked by browser. Go to browser settings → Site Settings → Notifications to enable.
+                    </p>
+                  )}
                 </div>
                 <Switch
                   checked={notificationsEnabled}
