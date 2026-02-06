@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Loader2, Wallet, Search, Snowflake, Sun, Eye, DollarSign } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Wallet, Search, Snowflake, Sun, Eye, DollarSign, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
@@ -45,11 +46,26 @@ interface Transaction {
   receiver_profile?: { username: string } | null;
 }
 
+interface WithdrawalRequest {
+  id: string;
+  user_id: string;
+  amount: number;
+  payment_method: string;
+  payment_details: any;
+  status: string;
+  created_at: string;
+  currency: string;
+  failure_reason: string | null;
+  profile?: { username: string; avatar_url: string | null } | null;
+}
+
 const AdminWalletsTab = () => {
   const { user } = useAuth();
   const [wallets, setWallets] = useState<WalletWithProfile[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingWithdrawals, setLoadingWithdrawals] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<WalletWithProfile[]>([]);
   const [searching, setSearching] = useState(false);
@@ -112,9 +128,41 @@ const AdminWalletsTab = () => {
     }
   }, []);
 
+  const fetchWithdrawals = useCallback(async () => {
+    setLoadingWithdrawals(true);
+    try {
+      const { data, error } = await supabase
+        .from("withdrawals")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+
+      // Get profiles for withdrawal users
+      const userIds = [...new Set((data || []).map(w => w.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .in("id", userIds);
+
+      const profileMap = new Map((profiles || []).map(p => [p.id, p]));
+
+      setWithdrawals((data || []).map(w => ({
+        ...w,
+        profile: profileMap.get(w.user_id) || null,
+      })));
+    } catch (error) {
+      console.error("Error fetching withdrawals:", error);
+    } finally {
+      setLoadingWithdrawals(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchWallets();
-  }, [fetchWallets]);
+    fetchWithdrawals();
+  }, [fetchWallets, fetchWithdrawals]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -252,10 +300,110 @@ const AdminWalletsTab = () => {
     fetchUserTransactions(userId);
   };
 
+  const handleApproveWithdrawal = async (withdrawalId: string, userId: string) => {
+    if (!user) return;
+    setProcessing(true);
+    try {
+      const { error } = await supabase
+        .from("withdrawals")
+        .update({
+          status: "completed",
+          processed_by: user.id,
+          processed_at: new Date().toISOString(),
+        })
+        .eq("id", withdrawalId);
+
+      if (error) throw error;
+
+      // Update the corresponding transaction
+      await supabase
+        .from("transactions")
+        .update({ status: "completed", completed_at: new Date().toISOString() })
+        .eq("sender_id", userId)
+        .eq("transaction_type", "withdrawal")
+        .eq("status", "pending");
+
+      // Log admin action
+      await supabase.from("admin_logs").insert({
+        admin_id: user.id,
+        action_type: "withdrawal_approved",
+        target_type: "withdrawal",
+        target_id: withdrawalId,
+      });
+
+      toast.success("Withdrawal approved!");
+      fetchWithdrawals();
+      fetchWallets();
+    } catch (error) {
+      console.error("Error approving withdrawal:", error);
+      toast.error("Failed to approve withdrawal");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRejectWithdrawal = async (withdrawalId: string, userId: string) => {
+    if (!user) return;
+    setProcessing(true);
+    try {
+      const { error } = await supabase
+        .from("withdrawals")
+        .update({
+          status: "failed",
+          processed_by: user.id,
+          processed_at: new Date().toISOString(),
+          failure_reason: "Rejected by admin",
+        })
+        .eq("id", withdrawalId);
+
+      if (error) throw error;
+
+      // Update the corresponding transaction to failed (triggers refund via DB trigger)
+      await supabase
+        .from("transactions")
+        .update({ status: "failed" })
+        .eq("sender_id", userId)
+        .eq("transaction_type", "withdrawal")
+        .eq("status", "pending");
+
+      // Log admin action
+      await supabase.from("admin_logs").insert({
+        admin_id: user.id,
+        action_type: "withdrawal_rejected",
+        target_type: "withdrawal",
+        target_id: withdrawalId,
+      });
+
+      toast.success("Withdrawal rejected. Balance refunded.");
+      fetchWithdrawals();
+      fetchWallets();
+    } catch (error) {
+      console.error("Error rejecting withdrawal:", error);
+      toast.error("Failed to reject withdrawal");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const displayWallets = searchResults.length > 0 ? searchResults : wallets;
+  const pendingWithdrawals = withdrawals.filter(w => w.status === "pending");
 
   return (
     <div className="space-y-6">
+      <Tabs defaultValue="wallets" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="wallets">Wallets</TabsTrigger>
+          <TabsTrigger value="withdrawals" className="relative">
+            Withdrawals
+            {pendingWithdrawals.length > 0 && (
+              <Badge className="ml-2 bg-destructive text-destructive-foreground text-xs px-1.5 py-0.5">
+                {pendingWithdrawals.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="wallets" className="space-y-6">
       {/* Search */}
       <Card>
         <CardHeader>
@@ -399,6 +547,116 @@ const AdminWalletsTab = () => {
           )}
         </CardContent>
       </Card>
+      </TabsContent>
+
+      <TabsContent value="withdrawals" className="space-y-6">
+        {/* Pending Withdrawals */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+              Pending Withdrawals ({pendingWithdrawals.length})
+            </CardTitle>
+            <Button variant="outline" size="sm" onClick={fetchWithdrawals}>
+              Refresh
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {loadingWithdrawals ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : pendingWithdrawals.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">No pending withdrawals</p>
+            ) : (
+              <div className="space-y-4">
+                {pendingWithdrawals.map((w) => (
+                  <div key={w.id} className="flex items-start justify-between p-4 rounded-lg border bg-yellow-500/5 border-yellow-500/20">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={w.profile?.avatar_url || undefined} />
+                        <AvatarFallback>{w.profile?.username?.[0]?.toUpperCase() || "?"}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">@{w.profile?.username || "Unknown"}</p>
+                        <p className="text-lg font-bold text-foreground">{w.currency} {w.amount.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">
+                          via {w.payment_method} • {formatDistanceToNow(new Date(w.created_at))} ago
+                        </p>
+                        {(w.payment_details as any)?.phone && (
+                          <p className="text-xs text-muted-foreground">Phone: {(w.payment_details as any).phone}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        onClick={() => handleApproveWithdrawal(w.id, w.user_id)}
+                        disabled={processing}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-1" />
+                        Approve
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => handleRejectWithdrawal(w.id, w.user_id)}
+                        disabled={processing}
+                      >
+                        Reject
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* All Withdrawals History */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              All Withdrawals ({withdrawals.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {withdrawals.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">No withdrawals yet</p>
+            ) : (
+              <div className="space-y-2">
+                {withdrawals.map((w) => (
+                  <div key={w.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={w.profile?.avatar_url || undefined} />
+                        <AvatarFallback>{w.profile?.username?.[0]?.toUpperCase() || "?"}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="text-sm font-medium">@{w.profile?.username || "Unknown"}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(w.created_at))} ago
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="font-medium">{w.currency} {w.amount.toLocaleString()}</p>
+                      <Badge variant={
+                        w.status === "completed" ? "default" :
+                        w.status === "pending" ? "secondary" : "destructive"
+                      }>
+                        {w.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
+      </Tabs>
 
       {/* Freeze Dialog */}
       <Dialog open={!!freezeDialog} onOpenChange={() => setFreezeDialog(null)}>

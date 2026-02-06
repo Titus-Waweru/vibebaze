@@ -64,6 +64,12 @@ export const usePushNotifications = () => {
   }, [navigate]);
 
   // Register service worker and get FCM token
+  // Get current browser permission state
+  const getPermissionState = useCallback((): NotificationPermission | "unsupported" => {
+    if (!("Notification" in window)) return "unsupported";
+    return Notification.permission;
+  }, []);
+
   const enableNotifications = useCallback(async () => {
     if (!user) {
       toast.error("Please sign in to enable notifications");
@@ -73,10 +79,31 @@ export const usePushNotifications = () => {
     try {
       setIsLoading(true);
 
-      // Request notification permission
+      // Check current permission state
+      const currentPermission = getPermissionState();
+      
+      if (currentPermission === "denied") {
+        toast.error(
+          "Notifications are blocked. Please enable them in your browser settings:\n" +
+          "Chrome: Settings → Site Settings → Notifications\n" +
+          "Safari: Preferences → Websites → Notifications",
+          { duration: 8000 }
+        );
+        setIsLoading(false);
+        return false;
+      }
+
+      // Request permission (only triggers browser prompt if state is "default")
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
-        toast.error("Notification permission denied");
+        if (permission === "denied") {
+          toast.error(
+            "Notification permission denied. To enable later, update your browser notification settings.",
+            { duration: 6000 }
+          );
+        } else {
+          toast.info("Notification permission dismissed. You can try again later.");
+        }
         setIsLoading(false);
         return false;
       }

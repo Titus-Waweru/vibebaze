@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { Sparkles, Users, Heart, Zap, Download, Globe } from "lucide-react";
 import heroGradient from "@/assets/hero-gradient.jpg";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
-import { InstallPrompt } from "@/components/InstallPrompt";
 import { InstallBanner } from "@/components/InstallBanner";
 import { Footer } from "@/components/Footer";
 
@@ -11,7 +10,6 @@ const Landing = () => {
   const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background overflow-hidden flex flex-col">
-      <InstallPrompt />
       <InstallBanner />
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center">

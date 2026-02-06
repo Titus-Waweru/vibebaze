@@ -26,6 +26,8 @@ async function hashToken(token: string): Promise<string> {
 }
 
 const handler = async (req: Request): Promise<Response> => {
+  // Get the origin from the request for dynamic URL generation
+  const origin = req.headers.get("origin") || "https://www.vibebaze.com";
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -81,7 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Production reset URL (IMPORTANT: Always use production domain)
-    const resetUrl = `https://www.vibebaze.com/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
+    const resetUrl = `${origin}/reset-password?token=${resetToken}&email=${encodeURIComponent(email)}`;
 
     const emailHtml = `
 <!DOCTYPE html>

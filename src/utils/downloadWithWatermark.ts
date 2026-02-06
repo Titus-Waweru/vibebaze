@@ -19,21 +19,33 @@ export async function downloadWithWatermark({ url, filename, username, type }: D
     const brandedFilename = `VibeBaze_${username}_${year}_${Date.now()}.${extension}`;
 
     if (type === "video") {
-      // For videos, download directly (watermarking requires server-side processing)
-      // In production, this should be handled by an edge function
-      const response = await fetch(url);
-      const blob = await response.blob();
-      
-      const downloadUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = downloadUrl;
-      a.download = brandedFilename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(downloadUrl);
-      
-      return true;
+      // For videos, add watermark overlay using canvas + video element
+      try {
+        const watermarkedBlob = await addVideoWatermark(url, username);
+        const downloadUrl = URL.createObjectURL(watermarkedBlob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = brandedFilename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+        return true;
+      } catch (videoError) {
+        console.warn("Video watermark failed, downloading without watermark:", videoError);
+        // Fallback: download without watermark
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = brandedFilename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+        return true;
+      }
     }
 
     // For images, add watermark using canvas
@@ -109,5 +121,137 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onload = () => resolve(img);
     img.onerror = reject;
     img.src = src;
+  });
+}
+
+/**
+ * Captures a single frame from the video, draws watermark, and returns as WebM blob.
+ * For full video watermarking we capture frames via canvas + MediaRecorder.
+ */
+async function addVideoWatermark(videoUrl: string, username: string): Promise<Blob> {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const video = document.createElement("video");
+      video.crossOrigin = "anonymous";
+      video.muted = true;
+      video.playsInline = true;
+
+      const response = await fetch(videoUrl);
+      const videoBlob = await response.blob();
+      video.src = URL.createObjectURL(videoBlob);
+
+      video.addEventListener("loadedmetadata", () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext("2d")!;
+
+        // Use MediaRecorder to capture watermarked frames
+        const stream = canvas.captureStream(30);
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+            ? "video/webm;codecs=vp9"
+            : "video/webm",
+        });
+
+        const chunks: Blob[] = [];
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) chunks.push(e.data);
+        };
+        mediaRecorder.onstop = () => {
+          URL.revokeObjectURL(video.src);
+          resolve(new Blob(chunks, { type: "video/webm" }));
+        };
+
+        // Load logo for watermark
+        const logo = new Image();
+        logo.crossOrigin = "anonymous";
+        logo.src = vibebazeLogo;
+
+        logo.onload = () => {
+          mediaRecorder.start();
+          video.play();
+
+          const drawFrame = () => {
+            if (video.ended || video.paused) {
+              mediaRecorder.stop();
+              return;
+            }
+
+            // Draw video frame
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Draw watermark (bottom-right)
+            const maxLogoWidth = canvas.width * 0.12;
+            const logoRatio = logo.height / logo.width;
+            const logoWidth = Math.min(logo.width, maxLogoWidth);
+            const logoHeight = logoWidth * logoRatio;
+            const padding = canvas.width * 0.03;
+            const logoX = canvas.width - logoWidth - padding;
+            const logoY = canvas.height - logoHeight - padding - 24;
+
+            // Semi-transparent background
+            ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+            ctx.beginPath();
+            ctx.roundRect(logoX - 6, logoY - 6, logoWidth + 12, logoHeight + 30, 6);
+            ctx.fill();
+
+            // Logo
+            ctx.globalAlpha = 0.7;
+            ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
+            ctx.globalAlpha = 1;
+
+            // Username
+            const fontSize = Math.max(10, canvas.width * 0.018);
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+            ctx.textAlign = "center";
+            ctx.fillText(`@${username}`, logoX + logoWidth / 2, logoY + logoHeight + fontSize + 2);
+
+            requestAnimationFrame(drawFrame);
+          };
+
+          requestAnimationFrame(drawFrame);
+        };
+
+        logo.onerror = () => {
+          // If logo fails, still watermark with text only
+          mediaRecorder.start();
+          video.play();
+
+          const drawFrame = () => {
+            if (video.ended || video.paused) {
+              mediaRecorder.stop();
+              return;
+            }
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const fontSize = Math.max(12, canvas.width * 0.02);
+            const padding = canvas.width * 0.03;
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+            ctx.fillRect(
+              canvas.width - padding - 120,
+              canvas.height - padding - fontSize - 8,
+              120 + padding,
+              fontSize + 16
+            );
+            ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+            ctx.textAlign = "right";
+            ctx.fillText(`VibeBaze @${username}`, canvas.width - padding, canvas.height - padding);
+
+            requestAnimationFrame(drawFrame);
+          };
+          requestAnimationFrame(drawFrame);
+        };
+      });
+
+      video.addEventListener("error", () => {
+        URL.revokeObjectURL(video.src);
+        reject(new Error("Failed to load video"));
+      });
+    } catch (err) {
+      reject(err);
+    }
   });
 }
