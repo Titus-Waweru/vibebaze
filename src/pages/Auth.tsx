@@ -21,6 +21,8 @@ const Auth = () => {
   const defaultTab = searchParams.get("mode") === "signup" || referralCode ? "signup" : "login";
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const africanNames = ["Brian Otieno", "Amina Hassan", "Wanjiku Mwangi", "Samuel Kiptoo", "Fatima Osei"];
+  const randomName = africanNames[Math.floor(Math.random() * africanNames.length)];
   const [signupData, setSignupData] = useState({
     email: "",
     password: "",
@@ -102,7 +104,7 @@ const Auth = () => {
     // Generate device fingerprint for abuse prevention
     const deviceFingerprint = generateDeviceFingerprint();
 
-    // Handle referral if code exists
+    // Handle referral if code exists - create pending referral (points awarded after first post)
     if (referralCode && data?.user) {
       try {
         // Find referrer by code
@@ -117,28 +119,34 @@ const Auth = () => {
           const { data: abuseCheck } = await supabase
             .rpc("check_referral_abuse", {
               p_referrer_id: referrerProfile.id,
-              p_ip_address: null, // IP tracked server-side if needed
+              p_ip_address: null,
               p_device_fingerprint: deviceFingerprint,
             });
 
           if (!abuseCheck) {
-            // Create referral record with abuse prevention data
-            await supabase.from("referrals").insert({
-              referrer_id: referrerProfile.id,
-              referred_id: data.user.id,
-              referral_code: referralCode.toUpperCase(),
-              status: "pending",
-              device_fingerprint: deviceFingerprint,
-            });
-            
-            toast.success("Referral applied! Your friend will earn points when you verify.");
+            // Check duplicate - one referral per referred user
+            const { data: existing } = await supabase
+              .from("referrals")
+              .select("id")
+              .eq("referred_id", data.user.id)
+              .maybeSingle();
+
+            if (!existing) {
+              await supabase.from("referrals").insert({
+                referrer_id: referrerProfile.id,
+                referred_id: data.user.id,
+                referral_code: referralCode.toUpperCase(),
+                status: "pending",
+                device_fingerprint: deviceFingerprint,
+              });
+              toast.success("Referral linked! Your friend earns points when you create your first post.");
+            }
           } else {
             console.warn("Referral flagged as potential abuse");
           }
         }
       } catch (err) {
         console.error("Referral error:", err);
-        // Don't block signup on referral error
       }
     }
 
@@ -208,7 +216,7 @@ const Auth = () => {
                   <Input
                     id="login-email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="amina@example.com"
                     value={loginData.email}
                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                     disabled={loading}
@@ -259,7 +267,7 @@ const Auth = () => {
                   <Input
                     id="signup-username"
                     type="text"
-                    placeholder="cooluser123"
+                    placeholder="amina_creates"
                     value={signupData.username}
                     onChange={(e) => setSignupData({ ...signupData, username: e.target.value })}
                     disabled={loading}
@@ -270,7 +278,7 @@ const Auth = () => {
                   <Input
                     id="signup-fullname"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder={randomName}
                     value={signupData.fullName}
                     onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
                     disabled={loading}
@@ -281,7 +289,7 @@ const Auth = () => {
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder="amina@example.com"
                     value={signupData.email}
                     onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
                     disabled={loading}

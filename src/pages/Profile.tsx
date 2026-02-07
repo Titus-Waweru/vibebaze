@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
-import { Settings, LogOut, Loader2, GraduationCap, Wallet, Gift, Trash2 } from "lucide-react";
+import { Settings, LogOut, Loader2, GraduationCap, Wallet, Gift, Trash2, ExternalLink } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import { toast } from "sonner";
 import FollowListModal from "@/components/FollowListModal";
@@ -121,6 +121,24 @@ const Profile = () => {
 
               {profile.bio && (
                 <p className="text-sm text-foreground max-w-md">{profile.bio}</p>
+              )}
+
+              {/* External Links */}
+              {profile.external_links && Array.isArray(profile.external_links) && (profile.external_links as any[]).length > 0 && (
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {(profile.external_links as any[]).map((link: any, i: number) => (
+                    <a
+                      key={i}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-muted hover:bg-muted/80 text-primary transition-colors"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
               )}
 
               {/* Stats */}
