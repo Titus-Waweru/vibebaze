@@ -1,4 +1,4 @@
-import { Heart, MessageCircle, Share2, Bookmark, Link2, Download, Sparkles } from "lucide-react";
+import { Heart, MessageCircle, Share2, Bookmark, Link2, Download, Sparkles, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ import VideoPlayer from "./VideoPlayer";
 import TipButton from "./TipButton";
 import { useWallet } from "@/hooks/useWallet";
 import { downloadWithWatermark } from "@/utils/downloadWithWatermark";
+import ReportContentDialog from "./ReportContentDialog";
 
 // Check if post is less than 7 days old
 const isNewPost = (createdAt: string): boolean => {
@@ -323,14 +324,20 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
                 />
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSave}
-              className={`hover:text-accent transition-colors ${isSaved ? "text-accent" : ""}`}
-            >
-              <Bookmark className={`h-6 w-6 ${isSaved ? "fill-current" : ""}`} />
-            </Button>
+            <div className="flex items-center gap-1">
+              {/* Report button - only for other users' posts */}
+              {!isOwnPost && currentUserId && (
+                <ReportContentDialog postId={post.id} userId={post.user_id} />
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSave}
+                className={`hover:text-accent transition-colors ${isSaved ? "text-accent" : ""}`}
+              >
+                <Bookmark className={`h-6 w-6 ${isSaved ? "fill-current" : ""}`} />
+              </Button>
+            </div>
           </div>
 
           {/* Caption */}

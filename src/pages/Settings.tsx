@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import Navbar from "@/components/Navbar";
 import { PhoneNumberModal } from "@/components/PhoneNumberModal";
-import { ArrowLeft, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save, Phone, FileText, Shield, Bell } from "lucide-react";
+import { ArrowLeft, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save, Phone, FileText, Shield, Bell, Link2, Plus, Trash2 } from "lucide-react";
 import ReferralCard from "@/components/ReferralCard";
 import { toast } from "sonner";
 
@@ -35,6 +35,9 @@ const Settings = () => {
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+  const [externalLinks, setExternalLinks] = useState<{ label: string; url: string }[]>([]);
+  const [newLinkLabel, setNewLinkLabel] = useState("");
+  const [newLinkUrl, setNewLinkUrl] = useState("");
   const [lastProfileUpdate, setLastProfileUpdate] = useState<string | null>(null);
   const [canEdit, setCanEdit] = useState(true);
   const [daysUntilEdit, setDaysUntilEdit] = useState(0);
@@ -75,6 +78,7 @@ const Settings = () => {
       setBio(data.bio || "");
       setAvatarUrl(data.avatar_url);
       setPhoneNumber(data.phone_number);
+      setExternalLinks(Array.isArray(data.external_links) ? (data.external_links as any[]).map((l: any) => ({ label: String(l?.label || ''), url: String(l?.url || '') })) : []);
       setLastProfileUpdate(data.last_profile_update);
 
       // Check if user can edit (10 days since last update)
@@ -176,6 +180,7 @@ const Settings = () => {
           username: username.trim(),
           full_name: fullName.trim() || null,
           bio: bio.trim() || null,
+          external_links: externalLinks as any,
           last_profile_update: new Date().toISOString(),
         })
         .eq("id", user.id);
@@ -302,15 +307,85 @@ const Settings = () => {
               <Textarea
                 id="bio"
                 value={bio}
-                onChange={(e) => setBio(e.target.value)}
+                onChange={(e) => {
+                  const words = e.target.value.split(/\s+/).filter(Boolean);
+                  if (words.length <= 50) {
+                    setBio(e.target.value);
+                  }
+                }}
                 placeholder="Share a bit about yourself..."
-                maxLength={160}
-                rows={4}
+                rows={3}
                 className="placeholder:text-muted-foreground/50"
               />
               <p className="text-xs text-muted-foreground text-right">
-                {bio.length}/160
+                {bio.split(/\s+/).filter(Boolean).length}/50 words
               </p>
+            </div>
+
+            {/* External Links */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                External Links
+              </Label>
+              {externalLinks.map((link, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input value={link.label} disabled className="w-1/3" />
+                  <Input value={link.url} disabled className="flex-1 text-xs" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive"
+                    onClick={() => setExternalLinks(prev => prev.filter((_, i) => i !== index))}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              {externalLinks.length < 5 && (
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Label (e.g. Website)"
+                    value={newLinkLabel}
+                    onChange={(e) => setNewLinkLabel(e.target.value)}
+                    className="w-1/3"
+                    maxLength={20}
+                  />
+                  <Input
+                    placeholder="https://..."
+                    value={newLinkUrl}
+                    onChange={(e) => setNewLinkUrl(e.target.value)}
+                    className="flex-1"
+                    type="url"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={() => {
+                      if (!newLinkLabel.trim() || !newLinkUrl.trim()) return;
+                      try {
+                        const url = new URL(newLinkUrl.trim());
+                        if (!['http:', 'https:'].includes(url.protocol)) {
+                          toast.error("Only http/https links allowed");
+                          return;
+                        }
+                      } catch {
+                        toast.error("Please enter a valid URL");
+                        return;
+                      }
+                      setExternalLinks(prev => [...prev, { label: newLinkLabel.trim(), url: newLinkUrl.trim() }]);
+                      setNewLinkLabel("");
+                      setNewLinkUrl("");
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">{externalLinks.length}/5 links</p>
             </div>
 
             {/* Save Button */}

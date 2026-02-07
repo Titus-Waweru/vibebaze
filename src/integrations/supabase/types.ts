@@ -738,6 +738,7 @@ export type Database = {
           created_at: string | null
           email_verified: boolean
           email_verified_at: string | null
+          external_links: Json | null
           followers_count: number | null
           following_count: number | null
           full_name: string | null
@@ -762,6 +763,7 @@ export type Database = {
           created_at?: string | null
           email_verified?: boolean
           email_verified_at?: string | null
+          external_links?: Json | null
           followers_count?: number | null
           following_count?: number | null
           full_name?: string | null
@@ -786,6 +788,7 @@ export type Database = {
           created_at?: string | null
           email_verified?: boolean
           email_verified_at?: string | null
+          external_links?: Json | null
           followers_count?: number | null
           following_count?: number | null
           full_name?: string | null

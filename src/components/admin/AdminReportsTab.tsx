@@ -4,17 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Shield, Check, X, Eye } from "lucide-react";
+import { Loader2, Shield, Check, X, Eye, Trash2 } from "lucide-react";
 import { useUserReports, UserReport } from "@/hooks/useUserReports";
 import { formatDistanceToNow } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const AdminReportsTab = () => {
   const { reports, loading, fetchReports, updateReportStatus } = useUserReports();
   const [filter, setFilter] = useState<"all" | "pending" | "reviewed" | "actioned" | "dismissed">("pending");
   const [selectedReport, setSelectedReport] = useState<UserReport | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -213,6 +216,43 @@ const AdminReportsTab = () => {
             </div>
           )}
           <DialogFooter className="flex-col sm:flex-row gap-2">
+            {selectedReport?.reported_post_id && (
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  if (!selectedReport?.reported_post_id) return;
+                  setDeleting(true);
+                  try {
+                    // Get post media URL first
+                    const { data: post } = await supabase.from("posts").select("media_url, thumbnail_url").eq("id", selectedReport.reported_post_id).single();
+                    // Delete from storage
+                    if (post?.media_url) {
+                      try {
+                        const url = new URL(post.media_url);
+                        const pathParts = url.pathname.split("/storage/v1/object/public/");
+                        if (pathParts.length > 1) {
+                          const [bucket, ...fp] = pathParts[1].split("/");
+                          await supabase.storage.from(bucket).remove([fp.join("/")]);
+                        }
+                      } catch {}
+                    }
+                    // Delete post (cascades)
+                    await supabase.from("posts").delete().eq("id", selectedReport.reported_post_id);
+                    await handleAction("actioned");
+                    toast.success("Post permanently deleted");
+                  } catch (err) {
+                    console.error(err);
+                    toast.error("Failed to delete post");
+                  } finally {
+                    setDeleting(false);
+                  }
+                }}
+                disabled={deleting || processing}
+              >
+                {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Trash2 className="h-4 w-4 mr-1" />}
+                Delete Post
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={() => handleAction("dismissed")}

@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/Navbar";
-import { Loader2, Play, Grid, ChevronRight, MessageCircle } from "lucide-react";
+import { Loader2, Play, Grid, ChevronRight, MessageCircle, ExternalLink } from "lucide-react";
 import FollowButton from "@/components/FollowButton";
 import FollowListModal from "@/components/FollowListModal";
 import { toast } from "sonner";
@@ -116,6 +116,24 @@ const UserProfile = () => {
 
               {profile.bio && (
                 <p className="text-sm text-foreground max-w-md">{profile.bio}</p>
+              )}
+
+              {/* External Links */}
+              {profile.external_links && Array.isArray(profile.external_links) && (profile.external_links as any[]).length > 0 && (
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {(profile.external_links as any[]).map((link: any, i: number) => (
+                    <a
+                      key={i}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-muted hover:bg-muted/80 text-primary transition-colors"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
               )}
 
               {/* Stats */}

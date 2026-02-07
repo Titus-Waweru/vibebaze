@@ -30,13 +30,17 @@ const DeletePostButton = ({ postId, mediaUrl, onDeleted, variant = "icon" }: Del
     try {
       // Delete from storage if media exists
       if (mediaUrl) {
-        const url = new URL(mediaUrl);
-        const pathParts = url.pathname.split("/storage/v1/object/public/");
-        if (pathParts.length > 1) {
-          const [bucket, ...filePathParts] = pathParts[1].split("/");
-          const filePath = filePathParts.join("/");
-          
-          await supabase.storage.from(bucket).remove([filePath]);
+        try {
+          const url = new URL(mediaUrl);
+          const pathParts = url.pathname.split("/storage/v1/object/public/");
+          if (pathParts.length > 1) {
+            const [bucket, ...filePathParts] = pathParts[1].split("/");
+            const filePath = filePathParts.join("/");
+            await supabase.storage.from(bucket).remove([filePath]);
+          }
+        } catch (storageErr) {
+          console.error("Storage cleanup error:", storageErr);
+          // Continue with DB delete even if storage fails
         }
       }
 
