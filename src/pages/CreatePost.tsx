@@ -10,9 +10,8 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
-import CameraCapture from "@/components/CameraCapture";
 import HashtagSuggestions from "@/components/HashtagSuggestions";
-import { Image, Video, Music, FileText, Upload, X, Camera } from "lucide-react";
+import { Image, Video, Music, FileText, Upload, X } from "lucide-react";
 
 const CreatePost = () => {
   const { user } = useAuth();
@@ -23,11 +22,9 @@ const CreatePost = () => {
   const [file, setFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-add VibeBaze tag on mount
   useEffect(() => {
     if (!selectedHashtags.includes("VibeBaze")) {
       setSelectedHashtags(["VibeBaze"]);
@@ -40,15 +37,9 @@ const CreatePost = () => {
     }
   };
 
-  const handleCameraCapture = (capturedFile: File, type: "image" | "video") => {
-    setFile(capturedFile);
-    setPostType(type);
-    setShowCamera(false);
-  };
-
   const handleToggleHashtag = (tag: string) => {
-    setSelectedHashtags(prev => 
-      prev.includes(tag) 
+    setSelectedHashtags(prev =>
+      prev.includes(tag)
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
@@ -77,9 +68,7 @@ const CreatePost = () => {
         .upload(fileName, file);
 
       clearInterval(progressInterval);
-
       if (error) throw error;
-
       setUploadProgress(100);
 
       const { data: { publicUrl } } = supabase.storage
@@ -145,7 +134,7 @@ const CreatePost = () => {
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
       <Navbar />
-      
+
       <div className="container mx-auto px-4 pt-6 max-w-2xl">
         <Card className="border-border/50 shadow-card">
           <CardHeader>
@@ -159,60 +148,26 @@ const CreatePost = () => {
               <div className="space-y-2">
                 <Label>Post Type</Label>
                 <div className="grid grid-cols-4 gap-2">
-                  <Button
-                    type="button"
-                    variant={postType === "text" ? "default" : "outline"}
-                    onClick={() => setPostType("text")}
-                    className={postType === "text" ? "bg-gradient-primary" : ""}
-                  >
+                  <Button type="button" variant={postType === "text" ? "default" : "outline"} onClick={() => setPostType("text")} className={postType === "text" ? "bg-gradient-primary" : ""}>
                     <FileText className="h-5 w-5" />
                   </Button>
-                  <Button
-                    type="button"
-                    variant={postType === "image" ? "default" : "outline"}
-                    onClick={() => setPostType("image")}
-                    className={postType === "image" ? "bg-gradient-primary" : ""}
-                  >
+                  <Button type="button" variant={postType === "image" ? "default" : "outline"} onClick={() => setPostType("image")} className={postType === "image" ? "bg-gradient-primary" : ""}>
                     <Image className="h-5 w-5" />
                   </Button>
-                  <Button
-                    type="button"
-                    variant={postType === "video" ? "default" : "outline"}
-                    onClick={() => setPostType("video")}
-                    className={postType === "video" ? "bg-gradient-primary" : ""}
-                  >
+                  <Button type="button" variant={postType === "video" ? "default" : "outline"} onClick={() => setPostType("video")} className={postType === "video" ? "bg-gradient-primary" : ""}>
                     <Video className="h-5 w-5" />
                   </Button>
-                  <Button
-                    type="button"
-                    variant={postType === "audio" ? "default" : "outline"}
-                    onClick={() => setPostType("audio")}
-                    className={postType === "audio" ? "bg-gradient-primary" : ""}
-                  >
+                  <Button type="button" variant={postType === "audio" ? "default" : "outline"} onClick={() => setPostType("audio")} className={postType === "audio" ? "bg-gradient-primary" : ""}>
                     <Music className="h-5 w-5" />
                   </Button>
                 </div>
               </div>
 
-              {/* File Upload & Camera */}
+              {/* File Upload */}
               {postType !== "text" && (
                 <div className="space-y-3">
                   <Label>Upload {postType}</Label>
-                  
-                  {/* Camera Button (for image/video) */}
-                  {(postType === "image" || postType === "video") && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setShowCamera(true)}
-                      className="w-full gap-2 border-primary/50 hover:bg-primary/10"
-                    >
-                      <Camera className="h-5 w-5" />
-                      {postType === "image" ? "Take Photo" : "Record Video"}
-                    </Button>
-                  )}
 
-                  {/* File Upload Area */}
                   <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors relative">
                     <Input
                       ref={fileInputRef}
@@ -246,13 +201,12 @@ const CreatePost = () => {
                         </div>
                       ) : (
                         <p className="text-sm text-muted-foreground">
-                          Or click to upload from device
+                          Click to upload from device
                         </p>
                       )}
                     </label>
                   </div>
-                  
-                  {/* Upload Progress */}
+
                   {isUploading && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
@@ -302,14 +256,6 @@ const CreatePost = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Camera Modal */}
-      <CameraCapture
-        open={showCamera}
-        onClose={() => setShowCamera(false)}
-        onCapture={handleCameraCapture}
-        mode={postType === "video" ? "video" : "image"}
-      />
     </div>
   );
 };
