@@ -34,6 +34,7 @@ interface PostCardProps {
     comments_count: number;
     views_count?: number;
     created_at: string;
+    hashtags?: string[];
     profiles?: {
       username: string;
       avatar_url?: string;
@@ -351,6 +352,21 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
               </span>{" "}
               {post.caption}
             </p>
+          )}
+
+          {/* Hashtags */}
+          {post.hashtags && post.hashtags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {post.hashtags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-xs text-primary cursor-pointer hover:underline"
+                  onClick={() => navigate(`/search?q=${encodeURIComponent(`#${tag}`)}`)}
+                >
+                  #{tag}
+                </span>
+              ))}
+            </div>
           )}
         </div>
       </div>

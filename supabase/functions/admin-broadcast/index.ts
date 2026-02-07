@@ -12,6 +12,7 @@ interface BroadcastPayload {
   title: string;
   body: string;
   messageType: "update" | "important" | "alert" | "announcement" | "maintenance";
+  channel: "both" | "email" | "push";
   url?: string;
 }
 
@@ -216,7 +217,7 @@ serve(async (req) => {
     }
 
     const payload: BroadcastPayload = await req.json();
-    const { title, body, messageType, url } = payload;
+    const { title, body, messageType, url, channel = "both" } = payload;
 
     if (!title?.trim() || !body?.trim()) {
       return new Response(JSON.stringify({ error: "Title and body are required" }), {
@@ -234,6 +235,7 @@ serve(async (req) => {
 
     // 1. Email broadcast
     const emailPromise = (async () => {
+      if (channel === "push") return; // Skip email if push-only
       if (!resendApiKey) {
         console.warn("RESEND_API_KEY not set, skipping email broadcast");
         return;
@@ -294,6 +296,7 @@ serve(async (req) => {
 
     // 2. Push broadcast
     const pushPromise = (async () => {
+      if (channel === "email") return; // Skip push if email-only
       if (!fcmClientEmail || !fcmPrivateKey || !fcmProjectId) {
         console.warn("FCM credentials not set, skipping push broadcast");
         return;
@@ -342,6 +345,7 @@ serve(async (req) => {
         title,
         body,
         messageType,
+        channel,
         email: emailResults,
         push: pushResults,
       },
