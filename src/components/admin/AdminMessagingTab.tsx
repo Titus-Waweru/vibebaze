@@ -5,21 +5,33 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Bell, Send, Loader2, CheckCircle2, AlertCircle, Users, Shield } from "lucide-react";
-import { broadcastNotification } from "@/lib/notificationService";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Bell, Send, Loader2, CheckCircle2, AlertCircle, Users, Shield, Mail, Smartphone } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+type MessageType = "update" | "important" | "alert" | "announcement" | "maintenance";
+
+const messageTypeOptions: { value: MessageType; label: string; emoji: string; description: string }[] = [
+  { value: "update", label: "Platform Update", emoji: "🚀", description: "New features & improvements" },
+  { value: "important", label: "Important Notice", emoji: "📢", description: "Critical information for users" },
+  { value: "alert", label: "Security Alert", emoji: "🚨", description: "Security-related notices" },
+  { value: "announcement", label: "Announcement", emoji: "🎉", description: "General announcements" },
+  { value: "maintenance", label: "Maintenance", emoji: "🔧", description: "Scheduled maintenance notices" },
+];
+
+interface BroadcastResult {
+  success: boolean;
+  email: { sent: number; failed: number; total: number };
+  push: { sent: number; failed: number; total: number; tokensRemoved: number };
+}
 
 const AdminMessagingTab = () => {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [messageType, setMessageType] = useState<MessageType>("update");
   const [sending, setSending] = useState(false);
-  const [lastResult, setLastResult] = useState<{
-    success: boolean;
-    sent: number;
-    failed: number;
-    total: number;
-    tokensRemoved?: number;
-  } | null>(null);
+  const [lastResult, setLastResult] = useState<BroadcastResult | null>(null);
 
   const handleBroadcast = async () => {
     if (!title.trim() || !body.trim()) {
@@ -31,28 +43,31 @@ const AdminMessagingTab = () => {
     setLastResult(null);
 
     try {
-      const result = await broadcastNotification(title.trim(), body.trim());
-      
+      const { data, error } = await supabase.functions.invoke("admin-broadcast", {
+        body: {
+          title: title.trim(),
+          body: body.trim(),
+          messageType,
+        },
+      });
+
+      if (error) throw error;
+
+      const result = data as BroadcastResult;
       setLastResult(result);
-      
-      if (result.sent > 0) {
-        toast.success(`Notification sent to ${result.sent} users!`);
+
+      const totalSent = (result.email?.sent || 0) + (result.push?.sent || 0);
+      if (totalSent > 0) {
+        toast.success(`Broadcast sent! ${result.email?.sent || 0} emails, ${result.push?.sent || 0} push notifications`);
         setTitle("");
         setBody("");
-      } else if (result.total === 0) {
-        toast.info("No users with notifications enabled");
       } else {
-        toast.error("Failed to send notifications");
+        toast.info("No users received the broadcast");
       }
     } catch (error) {
       console.error("Error sending broadcast:", error);
-      toast.error("Failed to send notification");
-      setLastResult({
-        success: false,
-        sent: 0,
-        failed: 0,
-        total: 0
-      });
+      toast.error("Failed to send broadcast");
+      setLastResult(null);
     } finally {
       setSending(false);
     }
@@ -65,37 +80,66 @@ const AdminMessagingTab = () => {
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Send Push Notification
+            Admin Broadcast
           </CardTitle>
           <CardDescription>
-            Broadcast a notification to all users with push notifications enabled
+            Send an email + push notification to all registered users simultaneously
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Message Type */}
           <div className="space-y-2">
-            <Label htmlFor="notification-title">Notification Title</Label>
+            <Label htmlFor="message-type">Message Type</Label>
+            <Select value={messageType} onValueChange={(v) => setMessageType(v as MessageType)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {messageTypeOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <span className="flex items-center gap-2">
+                      <span>{opt.emoji}</span>
+                      <span>{opt.label}</span>
+                      <span className="text-muted-foreground text-xs ml-1">— {opt.description}</span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Title */}
+          <div className="space-y-2">
+            <Label htmlFor="notification-title">Title</Label>
             <Input
               id="notification-title"
-              placeholder="e.g., New Feature Alert! 🎉"
+              placeholder="e.g., New Creator Tools Available! 🎉"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={100}
             />
           </div>
 
+          {/* Body */}
           <div className="space-y-2">
             <Label htmlFor="notification-body">Message</Label>
             <Textarea
               id="notification-body"
-              placeholder="e.g., Check out our new Creator School to learn how to grow your audience!"
+              placeholder="e.g., We've launched exciting new tools for creators. Check them out now!"
               value={body}
               onChange={(e) => setBody(e.target.value)}
-              maxLength={500}
-              rows={4}
+              maxLength={1000}
+              rows={5}
             />
-            <p className="text-xs text-muted-foreground text-right">
-              {body.length}/500
-            </p>
+            <p className="text-xs text-muted-foreground text-right">{body.length}/1000</p>
+          </div>
+
+          {/* Delivery info */}
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email</span>
+            <span>+</span>
+            <span className="flex items-center gap-1"><Smartphone className="h-3.5 w-3.5" /> Push Notification</span>
+            <span className="text-xs">(sent in parallel)</span>
           </div>
 
           <Button
@@ -104,44 +148,48 @@ const AdminMessagingTab = () => {
             className="w-full gap-2"
           >
             {sending ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Sending...
-              </>
+              <><Loader2 className="h-4 w-4 animate-spin" /> Broadcasting...</>
             ) : (
-              <>
-                <Send className="h-4 w-4" />
-                Send to All Users
-              </>
+              <><Send className="h-4 w-4" /> Broadcast to All Users</>
             )}
           </Button>
 
           {/* Last Result */}
           {lastResult && (
-            <Alert variant={lastResult.sent > 0 ? "default" : "destructive"}>
-              {lastResult.sent > 0 ? (
+            <Alert variant={(lastResult.email?.sent || 0) + (lastResult.push?.sent || 0) > 0 ? "default" : "destructive"}>
+              {(lastResult.email?.sent || 0) + (lastResult.push?.sent || 0) > 0 ? (
                 <CheckCircle2 className="h-4 w-4" />
               ) : (
                 <AlertCircle className="h-4 w-4" />
               )}
-              <AlertTitle>
-                {lastResult.sent > 0 ? "Broadcast Sent" : "Broadcast Failed"}
-              </AlertTitle>
+              <AlertTitle>Broadcast Results</AlertTitle>
               <AlertDescription>
-                <div className="flex items-center gap-4 mt-2 flex-wrap">
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span>{lastResult.total} subscribers</span>
-                  </div>
-                  <div className="text-green-500">✓ {lastResult.sent} sent</div>
-                  {lastResult.failed > 0 && (
-                    <div className="text-destructive">✗ {lastResult.failed} failed</div>
-                  )}
-                  {lastResult.tokensRemoved && lastResult.tokensRemoved > 0 && (
-                    <div className="text-muted-foreground">
-                      🗑️ {lastResult.tokensRemoved} invalid tokens removed
+                <div className="grid grid-cols-2 gap-4 mt-3">
+                  {/* Email results */}
+                  <div className="space-y-1">
+                    <p className="font-medium flex items-center gap-1 text-sm"><Mail className="h-3.5 w-3.5" /> Email</p>
+                    <div className="text-xs space-y-0.5">
+                      <div className="flex items-center gap-1"><Users className="h-3 w-3" /> {lastResult.email?.total || 0} recipients</div>
+                      <div className="text-primary">✓ {lastResult.email?.sent || 0} sent</div>
+                      {(lastResult.email?.failed || 0) > 0 && (
+                        <div className="text-destructive">✗ {lastResult.email.failed} failed</div>
+                      )}
                     </div>
-                  )}
+                  </div>
+                  {/* Push results */}
+                  <div className="space-y-1">
+                    <p className="font-medium flex items-center gap-1 text-sm"><Smartphone className="h-3.5 w-3.5" /> Push</p>
+                    <div className="text-xs space-y-0.5">
+                      <div className="flex items-center gap-1"><Users className="h-3 w-3" /> {lastResult.push?.total || 0} subscribers</div>
+                      <div className="text-primary">✓ {lastResult.push?.sent || 0} sent</div>
+                      {(lastResult.push?.failed || 0) > 0 && (
+                        <div className="text-destructive">✗ {lastResult.push.failed} failed</div>
+                      )}
+                      {(lastResult.push?.tokensRemoved || 0) > 0 && (
+                        <div className="text-muted-foreground">🗑️ {lastResult.push.tokensRemoved} stale tokens removed</div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </AlertDescription>
             </Alert>
@@ -149,37 +197,27 @@ const AdminMessagingTab = () => {
         </CardContent>
       </Card>
 
-      {/* FCM V1 API Info */}
+      {/* System Info */}
       <Card className="border-border/50 shadow-card">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            FCM V1 API Configuration
+            Broadcast System Info
           </CardTitle>
-          <CardDescription>
-            Firebase Cloud Messaging is configured using the modern V1 API
-          </CardDescription>
+          <CardDescription>Communication infrastructure details</CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-            <AlertTitle>Setup Complete</AlertTitle>
+            <CheckCircle2 className="h-4 w-4 text-primary" />
+            <AlertTitle>System Ready</AlertTitle>
             <AlertDescription className="space-y-2">
-              <p>
-                Push notifications are configured using Firebase V1 API with service account authentication.
-                This is the modern, recommended approach by Google.
-              </p>
               <ul className="list-disc list-inside space-y-1 mt-2 text-sm text-muted-foreground">
-                <li>Firebase project: Configured via environment secrets</li>
-                <li>Authentication: Service Account (OAuth2)</li>
-                <li>API: FCM V1 (https://fcm.googleapis.com/v1/...)</li>
-                <li>Service worker: /firebase-messaging-sw.js</li>
-                <li>Tokens stored in: push_subscriptions table</li>
+                <li><strong>Email:</strong> Resend API via updates@vibebaze.com</li>
+                <li><strong>Push:</strong> Firebase Cloud Messaging V1 (Service Account OAuth2)</li>
+                <li><strong>Delivery:</strong> Email + Push sent in parallel for instant reach</li>
+                <li><strong>Audit:</strong> Every broadcast logged to admin_logs</li>
+                <li><strong>Security:</strong> Admin role required, server-side verification</li>
               </ul>
-              <p className="mt-3 text-sm">
-                <strong>Benefits of V1 API:</strong> Better security, no legacy server keys,
-                automatic token management, and improved delivery reliability.
-              </p>
             </AlertDescription>
           </Alert>
         </CardContent>
