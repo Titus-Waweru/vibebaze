@@ -18,18 +18,18 @@ interface EncryptionKeys {
   privateKey: CryptoKey;
 }
 
+const STORAGE_KEY_PREFIX = "vb_enc_";
+
 export const useEncryption = (userId: string | undefined) => {
   const [keys, setKeys] = useState<EncryptionKeys | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize or load encryption keys
   useEffect(() => {
     if (!userId) {
       setLoading(false);
       return;
     }
-
     initializeKeys();
   }, [userId]);
 
@@ -40,7 +40,7 @@ export const useEncryption = (userId: string | undefined) => {
       setLoading(true);
       setError(null);
 
-      // Check if user has existing keys
+      // Check if user has existing keys in the database
       const { data: existingKeys, error: fetchError } = await supabase
         .from("user_encryption_keys")
         .select("*")
@@ -52,41 +52,36 @@ export const useEncryption = (userId: string | undefined) => {
       }
 
       if (existingKeys) {
-        // Load existing keys (use a derived password from session)
-        const sessionPassword = await getSessionPassword(userId);
-        const privateKey = await importPrivateKey(
-          existingKeys.encrypted_private_key,
-          sessionPassword,
-          existingKeys.key_salt
-        );
-        const publicKey = await importPublicKey(existingKeys.public_key);
-        setKeys({ publicKey, privateKey });
+        // Try to load the private key from localStorage first (fast path)
+        const cachedPrivateKey = await loadCachedPrivateKey(userId);
+        if (cachedPrivateKey) {
+          const publicKey = await importPublicKey(existingKeys.public_key);
+          setKeys({ publicKey, privateKey: cachedPrivateKey });
+          return;
+        }
+
+        // Fallback: decrypt from database using deterministic password
+        try {
+          const password = await getDeterministicPassword(userId);
+          const privateKey = await importPrivateKey(
+            existingKeys.encrypted_private_key,
+            password,
+            existingKeys.key_salt
+          );
+          const publicKey = await importPublicKey(existingKeys.public_key);
+
+          // Cache the private key locally for faster future loads
+          await cachePrivateKey(userId, privateKey);
+
+          setKeys({ publicKey, privateKey });
+        } catch (decryptErr) {
+          console.warn("Failed to decrypt existing keys, regenerating...", decryptErr);
+          // Keys are corrupted or password changed — regenerate
+          await regenerateKeys(userId);
+        }
       } else {
-        // Generate new key pair
-        const keyPair = await generateKeyPair();
-        const publicKeyStr = await exportPublicKey(keyPair.publicKey);
-        const sessionPassword = await getSessionPassword(userId);
-        const { encryptedPrivateKey, salt } = await exportPrivateKey(
-          keyPair.privateKey,
-          sessionPassword
-        );
-
-        // Store keys in database
-        const { error: insertError } = await supabase
-          .from("user_encryption_keys")
-          .insert({
-            user_id: userId,
-            public_key: publicKeyStr,
-            encrypted_private_key: encryptedPrivateKey,
-            key_salt: salt,
-          });
-
-        if (insertError) throw insertError;
-
-        setKeys({
-          publicKey: keyPair.publicKey,
-          privateKey: keyPair.privateKey,
-        });
+        // No keys exist yet — generate fresh ones
+        await regenerateKeys(userId);
       }
     } catch (err) {
       console.error("Error initializing encryption keys:", err);
@@ -96,15 +91,76 @@ export const useEncryption = (userId: string | undefined) => {
     }
   };
 
-  // Get session-based password for key encryption
-  const getSessionPassword = async (userId: string): Promise<string> => {
-    // Use a combination of user ID and session data
-    const { data } = await supabase.auth.getSession();
-    const sessionToken = data?.session?.access_token || "";
-    return `${userId}-${sessionToken.slice(0, 32)}`;
+  const regenerateKeys = async (uid: string) => {
+    const keyPair = await generateKeyPair();
+    const publicKeyStr = await exportPublicKey(keyPair.publicKey);
+    const password = await getDeterministicPassword(uid);
+    const { encryptedPrivateKey, salt } = await exportPrivateKey(
+      keyPair.privateKey,
+      password
+    );
+
+    // Upsert keys in database (handles both insert and update)
+    const { error: upsertError } = await supabase
+      .from("user_encryption_keys")
+      .upsert(
+        {
+          user_id: uid,
+          public_key: publicKeyStr,
+          encrypted_private_key: encryptedPrivateKey,
+          key_salt: salt,
+        },
+        { onConflict: "user_id" }
+      );
+
+    if (upsertError) throw upsertError;
+
+    // Cache locally
+    await cachePrivateKey(uid, keyPair.privateKey);
+
+    setKeys({
+      publicKey: keyPair.publicKey,
+      privateKey: keyPair.privateKey,
+    });
   };
 
-  // Encrypt a message for a recipient
+  // Deterministic password derived from user ID (no session dependency)
+  const getDeterministicPassword = async (uid: string): Promise<string> => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(`vibebaze-e2e-${uid}`);
+    const hash = await window.crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hash));
+    return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+  };
+
+  // Cache private key in IndexedDB-backed localStorage
+  const cachePrivateKey = async (uid: string, key: CryptoKey) => {
+    try {
+      const exported = await window.crypto.subtle.exportKey("jwk", key);
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${uid}`, JSON.stringify(exported));
+    } catch {
+      // Non-critical — will re-decrypt from DB next time
+    }
+  };
+
+  const loadCachedPrivateKey = async (uid: string): Promise<CryptoKey | null> => {
+    try {
+      const stored = localStorage.getItem(`${STORAGE_KEY_PREFIX}${uid}`);
+      if (!stored) return null;
+      const jwk = JSON.parse(stored);
+      return await window.crypto.subtle.importKey(
+        "jwk",
+        jwk,
+        { name: "RSA-OAEP", hash: "SHA-256" },
+        true,
+        ["decrypt"]
+      );
+    } catch {
+      localStorage.removeItem(`${STORAGE_KEY_PREFIX}${uid}`);
+      return null;
+    }
+  };
+
   const encryptForRecipient = useCallback(
     async (
       message: string,
@@ -118,29 +174,14 @@ export const useEncryption = (userId: string | undefined) => {
       if (!keys) return null;
 
       try {
-        // Generate a symmetric key for this message
         const symmetricKey = await generateSymmetricKey();
-
-        // Encrypt the message with the symmetric key
         const { encrypted, nonce } = await encryptMessage(message, symmetricKey);
 
-        // Encrypt the symmetric key for both sender and recipient
         const recipientKey = await importPublicKey(recipientPublicKey);
-        const encryptedKeyForReceiver = await encryptSymmetricKey(
-          symmetricKey,
-          recipientKey
-        );
-        const encryptedKeyForSender = await encryptSymmetricKey(
-          symmetricKey,
-          keys.publicKey
-        );
+        const encryptedKeyForReceiver = await encryptSymmetricKey(symmetricKey, recipientKey);
+        const encryptedKeyForSender = await encryptSymmetricKey(symmetricKey, keys.publicKey);
 
-        return {
-          encryptedContent: encrypted,
-          encryptedKeyForSender,
-          encryptedKeyForReceiver,
-          nonce,
-        };
+        return { encryptedContent: encrypted, encryptedKeyForSender, encryptedKeyForReceiver, nonce };
       } catch (err) {
         console.error("Error encrypting message:", err);
         return null;
@@ -149,7 +190,6 @@ export const useEncryption = (userId: string | undefined) => {
     [keys]
   );
 
-  // Decrypt a message using the sender's or receiver's encrypted key
   const decryptReceivedMessage = useCallback(
     async (
       encryptedContent: string,
@@ -159,20 +199,8 @@ export const useEncryption = (userId: string | undefined) => {
       if (!keys) return null;
 
       try {
-        // Decrypt the symmetric key with our private key
-        const symmetricKey = await decryptSymmetricKey(
-          encryptedKey,
-          keys.privateKey
-        );
-
-        // Decrypt the message
-        const decrypted = await decryptMessage(
-          encryptedContent,
-          nonce,
-          symmetricKey
-        );
-
-        return decrypted;
+        const symmetricKey = await decryptSymmetricKey(encryptedKey, keys.privateKey);
+        return await decryptMessage(encryptedContent, nonce, symmetricKey);
       } catch (err) {
         console.error("Error decrypting message:", err);
         return null;
@@ -181,10 +209,7 @@ export const useEncryption = (userId: string | undefined) => {
     [keys]
   );
 
-  // Get recipient's public key
-  const getRecipientPublicKey = async (
-    recipientId: string
-  ): Promise<string | null> => {
+  const getRecipientPublicKey = async (recipientId: string): Promise<string | null> => {
     const { data, error } = await supabase
       .from("user_encryption_keys")
       .select("public_key")
