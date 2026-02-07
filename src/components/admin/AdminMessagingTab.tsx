@@ -6,11 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Bell, Send, Loader2, CheckCircle2, AlertCircle, Users, Shield, Mail, Smartphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type MessageType = "update" | "important" | "alert" | "announcement" | "maintenance";
+type DeliveryChannel = "both" | "email" | "push";
 
 const messageTypeOptions: { value: MessageType; label: string; emoji: string; description: string }[] = [
   { value: "update", label: "Platform Update", emoji: "🚀", description: "New features & improvements" },
@@ -30,6 +32,7 @@ const AdminMessagingTab = () => {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [messageType, setMessageType] = useState<MessageType>("update");
+  const [channel, setChannel] = useState<DeliveryChannel>("both");
   const [sending, setSending] = useState(false);
   const [lastResult, setLastResult] = useState<BroadcastResult | null>(null);
 
@@ -48,6 +51,7 @@ const AdminMessagingTab = () => {
           title: title.trim(),
           body: body.trim(),
           messageType,
+          channel,
         },
       });
 
@@ -134,12 +138,29 @@ const AdminMessagingTab = () => {
             <p className="text-xs text-muted-foreground text-right">{body.length}/1000</p>
           </div>
 
-          {/* Delivery info */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> Email</span>
-            <span>+</span>
-            <span className="flex items-center gap-1"><Smartphone className="h-3.5 w-3.5" /> Push Notification</span>
-            <span className="text-xs">(sent in parallel)</span>
+          {/* Delivery Channel */}
+          <div className="space-y-2">
+            <Label>Delivery Channel</Label>
+            <RadioGroup value={channel} onValueChange={(v) => setChannel(v as DeliveryChannel)} className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="both" id="ch-both" />
+                <Label htmlFor="ch-both" className="flex items-center gap-1 cursor-pointer text-sm">
+                  <Mail className="h-3.5 w-3.5" /> + <Smartphone className="h-3.5 w-3.5" /> Both
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="email" id="ch-email" />
+                <Label htmlFor="ch-email" className="flex items-center gap-1 cursor-pointer text-sm">
+                  <Mail className="h-3.5 w-3.5" /> Email only
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="push" id="ch-push" />
+                <Label htmlFor="ch-push" className="flex items-center gap-1 cursor-pointer text-sm">
+                  <Smartphone className="h-3.5 w-3.5" /> Push only
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
 
           <Button
