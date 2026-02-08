@@ -328,7 +328,15 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
             <div className="flex items-center gap-1">
               {/* Report button - only for other users' posts */}
               {!isOwnPost && currentUserId && (
-                <ReportContentDialog postId={post.id} userId={post.user_id} />
+                <ReportContentDialog
+                  postId={post.id}
+                  userId={post.user_id}
+                  trigger={
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                      <Flag className="h-4 w-4" />
+                    </Button>
+                  }
+                />
               )}
               <Button
                 variant="ghost"
