@@ -204,6 +204,12 @@ const VideoPlayer = ({
         onEnded={pauseVideo}
         controls={isPlaying}
         muted={false}
+        onError={() => {
+          const container = containerRef.current;
+          if (container) {
+            container.innerHTML = '<div class="flex items-center justify-center h-48 bg-muted text-muted-foreground text-sm">Video unavailable</div>';
+          }
+        }}
       />
     </div>
   );

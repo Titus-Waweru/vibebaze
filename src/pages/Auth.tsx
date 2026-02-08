@@ -30,30 +30,6 @@ const Auth = () => {
     fullName: "",
   });
 
-  const handleForgotPassword = async () => {
-    if (!loginData.email) {
-      toast.error("Please enter your email address first");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("send-password-reset", {
-        body: { email: loginData.email },
-      });
-
-      if (error) throw error;
-
-      toast.success("If this email exists, a reset link has been sent to your inbox.");
-    } catch (error: any) {
-      console.error("Password reset error:", error);
-      // Always show success to prevent email enumeration
-      toast.success("If this email exists, a reset link has been sent to your inbox.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -227,7 +203,7 @@ const Auth = () => {
                     <Label htmlFor="login-password">Password</Label>
                     <button
                       type="button"
-                      onClick={handleForgotPassword}
+                      onClick={() => navigate("/reset-password")}
                       className="text-xs text-primary hover:text-primary/80 hover:underline"
                     >
                       Forgot password?
