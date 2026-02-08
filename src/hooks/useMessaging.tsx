@@ -171,11 +171,17 @@ export const useMessaging = (userId: string | undefined) => {
       try {
         setSendingMessage(true);
 
-        // Get recipient's public key
-        const recipientPublicKey = await getRecipientPublicKey(recipientId);
+        // Get recipient's public key — if they don't have one yet, we can't message them
+        // but we should give a helpful message
+        let recipientPublicKey = await getRecipientPublicKey(recipientId);
+        if (!recipientPublicKey) {
+          // Try once more after a brief wait (key may be generating)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          recipientPublicKey = await getRecipientPublicKey(recipientId);
+        }
         if (!recipientPublicKey) {
           console.error("Recipient encryption key not found for:", recipientId);
-          toast.error("Cannot send message - recipient hasn't set up secure messaging yet");
+          toast.error("This user hasn't opened their messages yet. Ask them to visit their Messages page first.");
           return false;
         }
 

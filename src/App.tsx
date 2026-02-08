@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useEncryptionInit } from "@/hooks/useEncryptionInit";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import Feed from "./pages/Feed";
@@ -33,6 +34,7 @@ const queryClient = new QueryClient();
 const AppRoutes = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authUserId, setAuthUserId] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,15 +46,20 @@ const AppRoutes = () => {
     // Check authentication status
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
+      setAuthUserId(session?.user?.id);
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
+      setAuthUserId(session?.user?.id);
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Initialize encryption keys as soon as user logs in
+  useEncryptionInit(authUserId);
 
   if (loading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">
