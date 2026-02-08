@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import Navbar from "@/components/Navbar";
 import { PhoneNumberModal } from "@/components/PhoneNumberModal";
-import { ArrowLeft, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save, Phone, FileText, Shield, Bell, Link2, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Camera, ChevronRight, DollarSign, Wallet, Loader2, Save, Phone, FileText, Shield, Bell, Link2, Plus, Trash2, Sun, Moon, Monitor } from "lucide-react";
 import ReferralCard from "@/components/ReferralCard";
 import { toast } from "sonner";
 
@@ -484,6 +484,38 @@ const Settings = () => {
                 </div>
               </div>
               <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Appearance / Theme */}
+        <Card className="border-border/50 shadow-card mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sun className="h-5 w-5" />
+              Appearance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <p className="font-medium text-foreground">Dark Mode</p>
+                <p className="text-sm text-muted-foreground">
+                  Switch between light and dark themes
+                </p>
+              </div>
+              <Switch
+                checked={document.documentElement.classList.contains("dark")}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    document.documentElement.classList.add("dark");
+                    localStorage.setItem("vibebaze-theme", "dark");
+                  } else {
+                    document.documentElement.classList.remove("dark");
+                    localStorage.setItem("vibebaze-theme", "light");
+                  }
+                }}
+              />
             </div>
           </CardContent>
         </Card>

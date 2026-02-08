@@ -248,6 +248,12 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
               src={post.media_url}
               alt="Post"
               className="w-full max-h-[600px] object-contain"
+              loading="lazy"
+              onError={(e) => {
+                const target = e.currentTarget;
+                target.style.display = "none";
+                target.parentElement!.innerHTML = '<div class="flex items-center justify-center h-48 text-muted-foreground text-sm">Image unavailable</div>';
+              }}
             />
           </div>
         )}

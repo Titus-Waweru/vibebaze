@@ -5,8 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import PostCard from "@/components/PostCard";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, UserPlus } from "lucide-react";
 import { VideoPlaybackProvider } from "@/contexts/VideoPlaybackContext";
+import { Card, CardContent } from "@/components/ui/card";
+import vibebazeLogo from "@/assets/vibebaze-logo.png";
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -129,6 +131,28 @@ const PostDetail = () => {
 
           {post && (
             <PostCard post={post} currentUserId={user?.id} />
+          )}
+
+          {/* Signup prompt for unauthenticated visitors */}
+          {!authLoading && !user && post && (
+            <Card className="mt-6 border-primary/30 bg-card/80 backdrop-blur-xl">
+              <CardContent className="p-6 text-center space-y-4">
+                <img src={vibebazeLogo} alt="VibeBaze" className="h-12 w-12 mx-auto" />
+                <h3 className="text-lg font-bold text-foreground">Join VibeBaze</h3>
+                <p className="text-sm text-muted-foreground">
+                  Sign up to like, comment, tip creators, and share your own content!
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Button onClick={() => navigate("/auth?mode=signup")} className="bg-gradient-primary gap-2">
+                    <UserPlus className="h-4 w-4" />
+                    Sign Up Free
+                  </Button>
+                  <Button variant="outline" onClick={() => navigate("/auth")}>
+                    Sign In
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
       </div>
