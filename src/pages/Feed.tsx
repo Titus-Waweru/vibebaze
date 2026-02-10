@@ -77,14 +77,21 @@ const Feed = () => {
 
       if (error) throw error;
       
+      // Filter out posts with unavailable media (media_url set but potentially broken)
+      const validPosts = (data || []).filter(post => {
+        // Text posts don't need media
+        if (post.type === "text") return true;
+        // Media posts must have a media_url
+        if (!post.media_url) return false;
+        return true;
+      });
+
       // Apply engagement-based algorithm
-      const rankedPosts = (data || [])
+      const rankedPosts = validPosts
         .map(post => ({ ...post, engagementScore: calculateEngagementScore(post) }))
         .sort((a, b) => {
-          // Mix of engagement and recency
           const engagementDiff = b.engagementScore - a.engagementScore;
           const timeDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-          // 70% engagement, 30% recency
           return (engagementDiff * 0.7) + (timeDiff * 0.0000003);
         })
         .slice(0, 20);
@@ -133,7 +140,12 @@ const Feed = () => {
         .limit(20);
 
       if (error) throw error;
-      setFollowingPosts(data || []);
+      // Filter out media posts without valid media_url
+      const validPosts = (data || []).filter(post => {
+        if (post.type === "text") return true;
+        return !!post.media_url;
+      });
+      setFollowingPosts(validPosts);
     } catch (error) {
       console.error("Error fetching following posts:", error);
     } finally {
@@ -162,8 +174,14 @@ const Feed = () => {
 
       if (error) throw error;
       
-      // Re-rank by engagement score
-      const rankedPosts = (data || [])
+      // Filter and re-rank by engagement score
+      const validPosts = (data || []).filter(post => {
+        if (post.type === "text") return true;
+        if (!post.media_url) return false;
+        return true;
+      });
+      
+      const rankedPosts = validPosts
         .map(post => ({ ...post, engagementScore: calculateEngagementScore(post) }))
         .sort((a, b) => b.engagementScore - a.engagementScore)
         .slice(0, 20);

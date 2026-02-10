@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "robots.txt"],
+      includeAssets: ["robots.txt", "sitemap.xml", "vibebaze-favicon.png"],
       manifest: {
         name: "VibeBaze - Africa's Creator Platform",
         short_name: "VibeBaze",

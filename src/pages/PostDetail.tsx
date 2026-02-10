@@ -48,7 +48,6 @@ const PostDetail = () => {
         return;
       }
 
-      // Check if post is private and not owned by current user
       if (data.is_private && data.user_id !== user?.id) {
         setError("This post is private");
         return;
@@ -65,15 +64,12 @@ const PostDetail = () => {
 
   const incrementViewCount = async () => {
     if (!postId) return;
-    
     try {
-      // Use raw SQL call since the function was just created
       await supabase
         .from("posts")
         .update({ views_count: (post?.views_count || 0) + 1 })
         .eq("id", postId);
     } catch (err) {
-      // Silently fail - view count is not critical
       console.error("Failed to increment view count:", err);
     }
   };
@@ -91,28 +87,24 @@ const PostDetail = () => {
       <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
         <Navbar />
         <div className="container mx-auto px-4 pt-6 max-w-2xl">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)}
-            className="mb-6"
-          >
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Go Back
           </Button>
-          
           <div className="text-center py-20">
             <h1 className="text-2xl font-bold text-foreground mb-2">{error}</h1>
             <p className="text-muted-foreground mb-6">
               The post you're looking for might have been removed or is not accessible.
             </p>
-            <Button onClick={() => navigate("/feed")}>
-              Go to Feed
-            </Button>
+            <Button onClick={() => navigate("/feed")}>Go to Feed</Button>
           </div>
         </div>
       </div>
     );
   }
+
+  // Guest user — can view but not interact
+  const isGuest = !user;
 
   return (
     <VideoPlaybackProvider>
@@ -120,27 +112,26 @@ const PostDetail = () => {
         <Navbar />
         
         <div className="container mx-auto px-4 pt-6 max-w-2xl">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate(-1)}
-            className="mb-6"
-          >
+          <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Go Back
           </Button>
 
           {post && (
-            <PostCard post={post} currentUserId={user?.id} />
+            <PostCard
+              post={post}
+              currentUserId={isGuest ? undefined : user?.id}
+            />
           )}
 
-          {/* Signup prompt for unauthenticated visitors */}
-          {!authLoading && !user && post && (
+          {/* Signup CTA for unauthenticated visitors */}
+          {isGuest && post && (
             <Card className="mt-6 border-primary/30 bg-card/80 backdrop-blur-xl">
               <CardContent className="p-6 text-center space-y-4">
                 <img src={vibebazeLogo} alt="VibeBaze" className="h-12 w-12 mx-auto" />
                 <h3 className="text-lg font-bold text-foreground">Join VibeBaze</h3>
                 <p className="text-sm text-muted-foreground">
-                  Sign up to like, comment, tip creators, and share your own content!
+                  Sign up to like, comment, tip creators, download content, and share your own vibes!
                 </p>
                 <div className="flex gap-3 justify-center">
                   <Button onClick={() => navigate("/auth?mode=signup")} className="bg-gradient-primary gap-2">

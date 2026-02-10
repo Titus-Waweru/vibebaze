@@ -88,7 +88,7 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
 
   const handleLike = async () => {
     if (!currentUserId) {
-      toast.error("Please log in to like posts");
+      navigate("/auth");
       return;
     }
 
@@ -115,7 +115,7 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
 
   const handleSave = async () => {
     if (!currentUserId) {
-      toast.error("Please log in to save posts");
+      navigate("/auth");
       return;
     }
 
@@ -169,6 +169,10 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
   };
 
   const handleDownload = async () => {
+    if (!currentUserId) {
+      navigate("/auth");
+      return;
+    }
     if (!post.media_url) return;
     
     setDownloading(true);
