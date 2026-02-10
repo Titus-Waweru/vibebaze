@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { signIn, signUp } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
-import { Gift } from "lucide-react";
+import { Gift, Eye, EyeOff } from "lucide-react";
 import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
 
 const Auth = () => {
@@ -21,6 +21,8 @@ const Auth = () => {
   const defaultTab = searchParams.get("mode") === "signup" || referralCode ? "signup" : "login";
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showSignupPassword, setShowSignupPassword] = useState(false);
   const africanNames = ["Brian Otieno", "Amina Hassan", "Wanjiku Mwangi", "Samuel Kiptoo", "Fatima Osei"];
   const randomName = africanNames[Math.floor(Math.random() * africanNames.length)];
   const [signupData, setSignupData] = useState({
@@ -77,13 +79,10 @@ const Auth = () => {
       return;
     }
 
-    // Generate device fingerprint for abuse prevention
     const deviceFingerprint = generateDeviceFingerprint();
 
-    // Handle referral if code exists - create pending referral (points awarded after first post)
     if (referralCode && data?.user) {
       try {
-        // Find referrer by code
         const { data: referrerProfile } = await supabase
           .from("profiles")
           .select("id")
@@ -91,7 +90,6 @@ const Auth = () => {
           .single();
 
         if (referrerProfile && referrerProfile.id !== data.user.id) {
-          // Check for referral abuse
           const { data: abuseCheck } = await supabase
             .rpc("check_referral_abuse", {
               p_referrer_id: referrerProfile.id,
@@ -100,7 +98,6 @@ const Auth = () => {
             });
 
           if (!abuseCheck) {
-            // Check duplicate - one referral per referred user
             const { data: existing } = await supabase
               .from("referrals")
               .select("id")
@@ -126,15 +123,12 @@ const Auth = () => {
       }
     }
 
-    // Send OTP for email verification AND welcome email
     if (data?.user) {
       try {
-        // Send OTP
         await supabase.functions.invoke("send-otp", {
           body: { userId: data.user.id, email: signupData.email, type: "verification" },
         });
 
-        // Send welcome email (async, don't wait)
         supabase.functions.invoke("send-welcome-email", {
           body: {
             email: signupData.email,
@@ -150,7 +144,6 @@ const Auth = () => {
         return;
       } catch (otpError) {
         console.error("OTP send error:", otpError);
-        // Continue even if OTP fails - user can resend
       }
     }
 
@@ -167,7 +160,6 @@ const Auth = () => {
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent/15 rounded-full blur-[100px] animate-float" style={{ animationDelay: "2s" }} />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-primary/10 rounded-full blur-[80px] animate-pulse" />
       
-      {/* Glass morphism card */}
       <Card className="w-full max-w-md relative z-10 border-border/30 shadow-2xl backdrop-blur-xl bg-card/80">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto mb-4">
@@ -209,14 +201,24 @@ const Auth = () => {
                       Forgot password?
                     </button>
                   </div>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                    disabled={loading}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="login-password"
+                      type={showLoginPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={loginData.password}
+                      onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                      disabled={loading}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword(!showLoginPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button 
                   type="submit" 
@@ -273,14 +275,24 @@ const Auth = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={signupData.password}
-                    onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                    disabled={loading}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="signup-password"
+                      type={showSignupPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={signupData.password}
+                      onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
+                      disabled={loading}
+                      className="pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignupPassword(!showSignupPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 <Button 
                   type="submit" 

@@ -351,8 +351,35 @@ const Search = () => {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : !searchQuery ? (
-              <div className="text-center py-20">
-                <p className="text-muted-foreground">Explore trending tags</p>
+              <div className="space-y-3">
+                {trendingTags.length > 0 ? (
+                  <>
+                    <p className="text-sm text-muted-foreground mb-3">Trending tags on VibeBaze</p>
+                    {trendingTags.map((tag, index) => (
+                      <Card
+                        key={index}
+                        className="cursor-pointer hover:border-primary/50 transition-colors"
+                        onClick={() => handleHashtagClick(tag)}
+                      >
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-3 rounded-full bg-primary/20">
+                              <Hash className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground">#{tag}</p>
+                              <p className="text-sm text-muted-foreground">Tap to view posts</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </>
+                ) : (
+                  <div className="text-center py-20">
+                    <p className="text-muted-foreground">Explore trending tags</p>
+                  </div>
+                )}
               </div>
             ) : hashtags.length === 0 ? (
               <div className="text-center py-20">
@@ -390,8 +417,27 @@ const Search = () => {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : !searchQuery ? (
-              <div className="text-center py-20">
-                <p className="text-muted-foreground">Discover amazing vibes</p>
+              <div className="space-y-3">
+                {trendingTags.length > 0 ? (
+                  <>
+                    <p className="text-sm text-muted-foreground mb-3">Explore vibes by tag</p>
+                    <div className="flex flex-wrap gap-2">
+                      {trendingTags.map((tag, index) => (
+                        <button
+                          key={index}
+                          onClick={() => handleHashtagClick(tag)}
+                          className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                        >
+                          #{tag}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-20">
+                    <p className="text-muted-foreground">Discover amazing vibes</p>
+                  </div>
+                )}
               </div>
             ) : posts.length === 0 ? (
               <div className="text-center py-20">

@@ -7,11 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import HashtagSuggestions from "@/components/HashtagSuggestions";
-import { Image, Video, Music, FileText, Upload, X } from "lucide-react";
+import { Image, Video, Music, FileText, Upload, X, Eye } from "lucide-react";
+
+const MAX_VIDEO_DURATION_SECONDS = 8 * 60; // 8 minutes
 
 const CreatePost = () => {
   const { user } = useAuth();
@@ -20,9 +24,12 @@ const CreatePost = () => {
   const [postType, setPostType] = useState<"text" | "image" | "video" | "audio">("text");
   const [caption, setCaption] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -31,9 +38,59 @@ const CreatePost = () => {
     }
   }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (user) {
+      supabase.from("profiles").select("username, avatar_url, full_name").eq("id", user.id).single()
+        .then(({ data }) => { if (data) setProfile(data); });
+    }
+  }, [user]);
+
+  // Generate preview URL for selected file
+  useEffect(() => {
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setFilePreviewUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setFilePreviewUrl(null);
+    }
+  }, [file]);
+
+  const validateVideoDuration = (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        URL.revokeObjectURL(video.src);
+        if (video.duration > MAX_VIDEO_DURATION_SECONDS) {
+          toast.error(`Video must be less than 8 minutes. Yours is ${Math.ceil(video.duration / 60)} minutes.`);
+          resolve(false);
+        } else {
+          resolve(true);
+        }
+      };
+      video.onerror = () => {
+        URL.revokeObjectURL(video.src);
+        resolve(true); // Allow if we can't check
+      };
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      
+      // Validate video duration
+      if (postType === "video") {
+        const valid = await validateVideoDuration(selectedFile);
+        if (!valid) {
+          e.target.value = "";
+          return;
+        }
+      }
+      
+      setFile(selectedFile);
     }
   };
 
@@ -148,16 +205,16 @@ const CreatePost = () => {
               <div className="space-y-2">
                 <Label>Post Type</Label>
                 <div className="grid grid-cols-4 gap-2">
-                  <Button type="button" variant={postType === "text" ? "default" : "outline"} onClick={() => setPostType("text")} className={postType === "text" ? "bg-gradient-primary" : ""}>
+                  <Button type="button" variant={postType === "text" ? "default" : "outline"} onClick={() => { setPostType("text"); setFile(null); }} className={postType === "text" ? "bg-gradient-primary" : ""}>
                     <FileText className="h-5 w-5" />
                   </Button>
-                  <Button type="button" variant={postType === "image" ? "default" : "outline"} onClick={() => setPostType("image")} className={postType === "image" ? "bg-gradient-primary" : ""}>
+                  <Button type="button" variant={postType === "image" ? "default" : "outline"} onClick={() => { setPostType("image"); setFile(null); }} className={postType === "image" ? "bg-gradient-primary" : ""}>
                     <Image className="h-5 w-5" />
                   </Button>
-                  <Button type="button" variant={postType === "video" ? "default" : "outline"} onClick={() => setPostType("video")} className={postType === "video" ? "bg-gradient-primary" : ""}>
+                  <Button type="button" variant={postType === "video" ? "default" : "outline"} onClick={() => { setPostType("video"); setFile(null); }} className={postType === "video" ? "bg-gradient-primary" : ""}>
                     <Video className="h-5 w-5" />
                   </Button>
-                  <Button type="button" variant={postType === "audio" ? "default" : "outline"} onClick={() => setPostType("audio")} className={postType === "audio" ? "bg-gradient-primary" : ""}>
+                  <Button type="button" variant={postType === "audio" ? "default" : "outline"} onClick={() => { setPostType("audio"); setFile(null); }} className={postType === "audio" ? "bg-gradient-primary" : ""}>
                     <Music className="h-5 w-5" />
                   </Button>
                 </div>
@@ -166,7 +223,7 @@ const CreatePost = () => {
               {/* File Upload */}
               {postType !== "text" && (
                 <div className="space-y-3">
-                  <Label>Upload {postType}</Label>
+                  <Label>Upload {postType} {postType === "video" && <span className="text-xs text-muted-foreground">(max 8 min)</span>}</Label>
 
                   <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors relative">
                     <Input
@@ -243,6 +300,70 @@ const CreatePost = () => {
                 selectedHashtags={selectedHashtags}
                 onToggleHashtag={handleToggleHashtag}
               />
+
+              {/* Preview Toggle */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2"
+                onClick={() => setShowPreview(!showPreview)}
+              >
+                <Eye className="h-4 w-4" />
+                {showPreview ? "Hide Preview" : "Preview Post"}
+              </Button>
+
+              {/* Post Preview */}
+              {showPreview && (
+                <Card className="border-border/50 overflow-hidden">
+                  <div className="p-4 flex items-center gap-3">
+                    <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                      <AvatarImage src={profile?.avatar_url} />
+                      <AvatarFallback className="bg-gradient-primary text-background">
+                        {profile?.username?.[0]?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-foreground">{profile?.username || "You"}</p>
+                      <p className="text-xs text-muted-foreground">Just now</p>
+                    </div>
+                  </div>
+
+                  {/* Preview media */}
+                  {postType === "image" && filePreviewUrl && (
+                    <img src={filePreviewUrl} alt="Preview" className="w-full max-h-[400px] object-contain bg-muted" />
+                  )}
+                  {postType === "video" && filePreviewUrl && (
+                    <video src={filePreviewUrl} controls className="w-full max-h-[400px] bg-black" />
+                  )}
+                  {postType === "audio" && filePreviewUrl && (
+                    <div className="p-6 bg-gradient-to-br from-primary/10 to-accent/10">
+                      <audio src={filePreviewUrl} controls className="w-full" />
+                    </div>
+                  )}
+                  {postType === "text" && caption && (
+                    <div className="p-8 bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 min-h-[150px] flex items-center justify-center">
+                      <p className="text-xl text-foreground text-center font-medium">{caption}</p>
+                    </div>
+                  )}
+
+                  {caption && postType !== "text" && (
+                    <div className="px-4 pt-3">
+                      <p className="text-sm text-foreground">
+                        <span className="font-semibold">{profile?.username || "You"}</span>{" "}
+                        {caption}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedHashtags.length > 0 && (
+                    <div className="px-4 py-2 flex flex-wrap gap-1.5">
+                      {selectedHashtags.map((tag) => (
+                        <span key={tag} className="text-xs text-primary">#{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              )}
 
               {/* Submit */}
               <Button

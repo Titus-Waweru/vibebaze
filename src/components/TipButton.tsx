@@ -92,9 +92,15 @@ const TipButton = ({
         </div>
 
         {selectedAmount && (
-          <p className="text-center text-sm text-muted-foreground">
-            You're about to send <span className="font-medium text-foreground">KSh {selectedAmount}</span>
-          </p>
+          <div className="text-center space-y-1">
+            <p className="text-sm text-muted-foreground">
+              You're sending <span className="font-medium text-foreground">KSh {selectedAmount}</span>
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Creator receives: <span className="font-medium text-foreground">KSh {(selectedAmount * 0.85).toFixed(0)}</span>
+              <span className="ml-1">(15% platform fee: KSh {(selectedAmount * 0.15).toFixed(0)})</span>
+            </p>
+          </div>
         )}
 
         <DialogFooter className="flex-col sm:flex-row gap-2">

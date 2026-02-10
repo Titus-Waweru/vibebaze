@@ -248,27 +248,31 @@ const Settings = () => {
                     {username?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
-                <label
-                  htmlFor="avatar-upload"
-                  className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors shadow-lg"
-                >
-                  {uploading ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
-                  ) : (
-                    <Camera className="h-4 w-4 text-primary-foreground" />
-                  )}
-                </label>
-                <input
-                  id="avatar-upload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleAvatarUpload}
-                  disabled={uploading}
-                />
+                {canEdit && (
+                  <>
+                    <label
+                      htmlFor="avatar-upload"
+                      className="absolute bottom-0 right-0 p-2 bg-primary rounded-full cursor-pointer hover:bg-primary/90 transition-colors shadow-lg"
+                    >
+                      {uploading ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
+                      ) : (
+                        <Camera className="h-4 w-4 text-primary-foreground" />
+                      )}
+                    </label>
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                      disabled={uploading}
+                    />
+                  </>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">
-                Tap the camera icon to change your photo
+                {canEdit ? "Tap the camera icon to change your photo" : `Photo locked for ${daysUntilEdit} more days`}
               </p>
             </div>
 
