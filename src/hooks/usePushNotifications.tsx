@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { initializeMessaging, getMessagingInstance, getToken, onMessage, getFirebaseConfig } from "@/lib/firebase";
+import { initializeMessaging, getMessagingInstance, getToken, onMessage } from "@/lib/firebase";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -108,26 +108,9 @@ export const usePushNotifications = () => {
         return false;
       }
 
-      // Register the service worker
-      // Pass Firebase config to the service worker via query params or postMessage
-      const registration = await navigator.serviceWorker.register(
-        `/firebase-messaging-sw.js`,
-        { scope: "/" }
-      );
-
-      console.log("[VibeBaze] Service Worker registered:", registration);
-
-      // Wait for the service worker to be ready
-      await navigator.serviceWorker.ready;
-
-      // Send Firebase config to the service worker
-      const firebaseConfig = getFirebaseConfig();
-      if (registration.active) {
-        registration.active.postMessage({
-          type: "FIREBASE_CONFIG",
-          config: firebaseConfig
-        });
-      }
+      // Use the PWA service worker (registered by vite-plugin-pwa)
+      const registration = await navigator.serviceWorker.ready;
+      console.log("[VibeBaze] Using PWA service worker for FCM:", registration);
 
       // Initialize Firebase Messaging
       const messaging = await initializeMessaging();
@@ -203,13 +186,8 @@ export const usePushNotifications = () => {
         return false;
       }
 
-      // Unregister service worker
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const registration of registrations) {
-        if (registration.active?.scriptURL.includes("firebase-messaging-sw.js")) {
-          await registration.unregister();
-        }
-      }
+      // Note: We don't unregister the PWA service worker as it handles caching too
+      // The FCM token deletion from the database is sufficient to stop notifications
 
       setIsEnabled(false);
       setFcmToken(null);
@@ -232,8 +210,7 @@ export const usePushNotifications = () => {
       const messaging = getMessagingInstance();
       if (!messaging) return;
 
-      const registration = await navigator.serviceWorker.getRegistration("/firebase-messaging-sw.js");
-      if (!registration) return;
+      const registration = await navigator.serviceWorker.ready;
 
       const newToken = await getToken(messaging, {
         vapidKey: VAPID_KEY,
