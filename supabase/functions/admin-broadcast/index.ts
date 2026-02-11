@@ -16,7 +16,7 @@ interface BroadcastPayload {
   url?: string;
 }
 
-// ─── FCM V1 helpers (reused from send-push-notification) ───
+// ─── FCM V1 helpers ───
 
 async function createJWT(clientEmail: string, privateKey: string): Promise<string> {
   const header = { alg: "RS256", typ: "JWT" };
@@ -79,33 +79,39 @@ async function sendFCM(
   title: string,
   body: string,
   url: string
-): Promise<{ success: boolean; invalid?: boolean }> {
-  const res = await fetch(
-    `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify({
-        message: {
-          token,
-          notification: { title, body },
-          webpush: {
-            notification: { title, body, icon: "/pwa-192x192.png", badge: "/pwa-192x192.png" },
-            fcm_options: { link: url },
+): Promise<{ success: boolean; invalid?: boolean; error?: string }> {
+  try {
+    const res = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          message: {
+            token,
+            notification: { title, body },
+            webpush: {
+              notification: { title, body, icon: "/pwa-192x192.png", badge: "/pwa-192x192.png" },
+              fcm_options: { link: url },
+            },
+            data: { url, tag: "admin-broadcast" },
           },
-          data: { url, tag: "admin-broadcast" },
-        },
-      }),
+        }),
+      }
+    );
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error(`FCM send error for token ${token.substring(0, 15)}...:`, errText);
+      if (errText.includes("UNREGISTERED") || errText.includes("INVALID_ARGUMENT")) {
+        return { success: false, invalid: true, error: errText };
+      }
+      return { success: false, error: errText };
     }
-  );
-  if (!res.ok) {
-    const errText = await res.text();
-    if (errText.includes("UNREGISTERED") || errText.includes("INVALID_ARGUMENT")) {
-      return { success: false, invalid: true };
-    }
-    return { success: false };
+    return { success: true };
+  } catch (err) {
+    console.error(`FCM send exception:`, err);
+    return { success: false, error: err instanceof Error ? err.message : "Unknown error" };
   }
-  return { success: true };
 }
 
 // ─── Email helpers ───
@@ -175,6 +181,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Always return 200 with structured results — never throw to the caller
+  const respond = (data: Record<string, unknown>, status = 200) =>
+    new Response(JSON.stringify(data), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -188,185 +201,191 @@ serve(async (req) => {
     // Verify caller is admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond({ error: "Unauthorized" }, 401);
     }
 
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond({ error: "Unauthorized" }, 401);
     }
 
-    // Check admin role
     const { data: isAdmin } = await supabase.rpc("has_role", {
       _user_id: user.id,
       _role: "admin",
     });
 
     if (!isAdmin) {
-      return new Response(JSON.stringify({ error: "Admin access required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond({ error: "Admin access required" }, 403);
     }
 
     const payload: BroadcastPayload = await req.json();
     const { title, body, messageType, url, channel = "both" } = payload;
 
     if (!title?.trim() || !body?.trim()) {
-      return new Response(JSON.stringify({ error: "Title and body are required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return respond({ error: "Title and body are required" }, 400);
     }
 
     const broadcastUrl = url || "/notifications";
 
     // ─── Run email + push in parallel ───
 
-    const emailResults = { sent: 0, failed: 0, total: 0 };
-    const pushResults = { sent: 0, failed: 0, total: 0, tokensRemoved: 0 };
+    const emailResults = { sent: 0, failed: 0, total: 0, error: "" };
+    const pushResults = { sent: 0, failed: 0, total: 0, tokensRemoved: 0, error: "" };
 
     // 1. Email broadcast
     const emailPromise = (async () => {
-      if (channel === "push") return; // Skip email if push-only
+      if (channel === "push") return;
       if (!resendApiKey) {
+        emailResults.error = "RESEND_API_KEY not configured";
         console.warn("RESEND_API_KEY not set, skipping email broadcast");
         return;
       }
 
-      const resend = new Resend(resendApiKey);
+      try {
+        const resend = new Resend(resendApiKey);
 
-      // Fetch all user emails via auth admin API
-      let allUsers: { email: string }[] = [];
-      let page = 1;
-      const perPage = 1000;
+        let allUsers: { email: string }[] = [];
+        let page = 1;
+        const perPage = 1000;
 
-      while (true) {
-        const { data: listData, error: listError } = await supabase.auth.admin.listUsers({
-          page,
-          perPage,
-        });
-
-        if (listError || !listData?.users?.length) break;
-
-        allUsers = allUsers.concat(
-          listData.users
-            .filter((u: any) => u.email && u.email_confirmed_at)
-            .map((u: any) => ({ email: u.email! }))
-        );
-
-        if (listData.users.length < perPage) break;
-        page++;
-      }
-
-      emailResults.total = allUsers.length;
-      console.log(`Sending email broadcast to ${allUsers.length} users`);
-
-      const subjectPrefix = typeEmoji[messageType] || "📢";
-      const emailHtml = buildEmailHtml(title, body, messageType);
-
-      // Send in batches of 50 (Resend rate limits)
-      const batchSize = 50;
-      for (let i = 0; i < allUsers.length; i += batchSize) {
-        const batch = allUsers.slice(i, i + batchSize);
-        const batchResults = await Promise.allSettled(
-          batch.map((u) =>
-            resend.emails.send({
-              from: "VibeBaze <updates@vibebaze.com>",
-              to: [u.email],
-              subject: `${subjectPrefix} ${title}`,
-              html: emailHtml,
-            })
-          )
-        );
-
-        for (const r of batchResults) {
-          if (r.status === "fulfilled") emailResults.sent++;
-          else emailResults.failed++;
+        while (true) {
+          const { data: listData, error: listError } = await supabase.auth.admin.listUsers({ page, perPage });
+          if (listError || !listData?.users?.length) break;
+          allUsers = allUsers.concat(
+            listData.users
+              .filter((u: any) => u.email && u.email_confirmed_at)
+              .map((u: any) => ({ email: u.email! }))
+          );
+          if (listData.users.length < perPage) break;
+          page++;
         }
+
+        emailResults.total = allUsers.length;
+        console.log(`Sending email broadcast to ${allUsers.length} users`);
+
+        const subjectPrefix = typeEmoji[messageType] || "📢";
+        const emailHtml = buildEmailHtml(title, body, messageType);
+
+        const batchSize = 50;
+        for (let i = 0; i < allUsers.length; i += batchSize) {
+          const batch = allUsers.slice(i, i + batchSize);
+          const batchResults = await Promise.allSettled(
+            batch.map((u) =>
+              resend.emails.send({
+                from: "VibeBaze <updates@vibebaze.com>",
+                to: [u.email],
+                subject: `${subjectPrefix} ${title}`,
+                html: emailHtml,
+              })
+            )
+          );
+          for (const r of batchResults) {
+            if (r.status === "fulfilled") emailResults.sent++;
+            else emailResults.failed++;
+          }
+        }
+      } catch (err) {
+        console.error("Email broadcast error:", err);
+        emailResults.error = err instanceof Error ? err.message : "Email broadcast failed";
       }
     })();
 
     // 2. Push broadcast
     const pushPromise = (async () => {
-      if (channel === "email") return; // Skip push if email-only
+      if (channel === "email") return;
       if (!fcmClientEmail || !fcmPrivateKey || !fcmProjectId) {
+        pushResults.error = "FCM credentials not configured";
         console.warn("FCM credentials not set, skipping push broadcast");
         return;
       }
 
-      const { data: subscriptions } = await supabase
-        .from("push_subscriptions")
-        .select("id, endpoint, user_id");
+      try {
+        const { data: subscriptions, error: fetchError } = await supabase
+          .from("push_subscriptions")
+          .select("id, endpoint, user_id");
 
-      if (!subscriptions?.length) return;
+        if (fetchError) {
+          pushResults.error = "Failed to fetch push subscriptions";
+          console.error("Error fetching subscriptions:", fetchError);
+          return;
+        }
 
-      pushResults.total = subscriptions.length;
-      console.log(`Sending push broadcast to ${subscriptions.length} subscribers`);
+        if (!subscriptions?.length) {
+          console.log("No push subscriptions found");
+          return;
+        }
 
-      const accessToken = await getAccessToken(fcmClientEmail, fcmPrivateKey);
-      const invalidIds: string[] = [];
+        pushResults.total = subscriptions.length;
+        console.log(`Sending push broadcast to ${subscriptions.length} subscribers`);
 
-      const results = await Promise.allSettled(
-        subscriptions.map(async (sub) => {
+        let accessToken: string;
+        try {
+          accessToken = await getAccessToken(fcmClientEmail, fcmPrivateKey);
+        } catch (authErr) {
+          pushResults.error = "FCM authentication failed";
+          console.error("FCM auth error:", authErr);
+          return;
+        }
+
+        const invalidIds: string[] = [];
+
+        // Send to each token individually, catching per-token errors
+        for (const sub of subscriptions) {
           const result = await sendFCM(accessToken, fcmProjectId, sub.endpoint, title, body, broadcastUrl);
-          if (!result.success && result.invalid) invalidIds.push(sub.id);
-          if (!result.success) throw new Error("FCM send failed");
-          return result;
-        })
-      );
+          if (result.success) {
+            pushResults.sent++;
+          } else {
+            pushResults.failed++;
+            if (result.invalid) invalidIds.push(sub.id);
+          }
+        }
 
-      pushResults.sent = results.filter((r) => r.status === "fulfilled").length;
-      pushResults.failed = results.filter((r) => r.status === "rejected").length;
-
-      if (invalidIds.length > 0) {
-        await supabase.from("push_subscriptions").delete().in("id", invalidIds);
-        pushResults.tokensRemoved = invalidIds.length;
+        // Clean up invalid tokens
+        if (invalidIds.length > 0) {
+          console.log(`Removing ${invalidIds.length} invalid tokens`);
+          await supabase.from("push_subscriptions").delete().in("id", invalidIds);
+          pushResults.tokensRemoved = invalidIds.length;
+        }
+      } catch (err) {
+        console.error("Push broadcast error:", err);
+        pushResults.error = err instanceof Error ? err.message : "Push broadcast failed";
       }
     })();
 
-    // Wait for both
+    // Wait for both — allSettled so one can't break the other
     await Promise.allSettled([emailPromise, pushPromise]);
 
-    // Log admin action
-    await supabase.from("admin_logs").insert({
-      admin_id: user.id,
-      action_type: "broadcast",
-      target_type: "platform",
-      reason: `[${messageType}] ${title}`,
-      new_value: {
-        title,
-        body,
-        messageType,
-        channel,
-        email: emailResults,
-        push: pushResults,
-      },
-    });
+    // Log admin action (best-effort, don't let logging break the response)
+    try {
+      await supabase.from("admin_logs").insert({
+        admin_id: user.id,
+        action_type: "broadcast",
+        target_type: "platform",
+        reason: `[${messageType}] ${title}`,
+        new_value: { title, body, messageType, channel, email: emailResults, push: pushResults },
+      });
+    } catch (logErr) {
+      console.error("Failed to write admin log:", logErr);
+    }
 
     console.log("Broadcast complete:", { email: emailResults, push: pushResults });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        email: emailResults,
-        push: pushResults,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // ALWAYS return 200 with full result details
+    return respond({
+      success: true,
+      email: emailResults,
+      push: pushResults,
+    });
   } catch (error: unknown) {
-    console.error("Broadcast error:", error);
+    // Even on unexpected errors, return 200 with error info so the frontend doesn't crash
+    console.error("Broadcast unexpected error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return respond({
+      success: false,
+      error: message,
+      email: { sent: 0, failed: 0, total: 0 },
+      push: { sent: 0, failed: 0, total: 0, tokensRemoved: 0 },
     });
   }
 });
