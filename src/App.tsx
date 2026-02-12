@@ -27,6 +27,7 @@ import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import NotFound from "./pages/NotFound";
 import AiAssistant from "@/components/AiAssistant";
+import PushNotificationReminder from "@/components/PushNotificationReminder";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -36,30 +37,40 @@ const AppRoutes = () => {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authUserId, setAuthUserId] = useState<string | undefined>(undefined);
+  const [userName, setUserName] = useState<string | undefined>(undefined);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if app is installed (running in standalone mode)
     const checkInstalled = window.matchMedia('(display-mode: standalone)').matches ||
                           (window.navigator as any).standalone === true;
     setIsInstalled(checkInstalled);
 
-    // Check authentication status
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthenticated(!!session);
       setAuthUserId(session?.user?.id);
+      if (session?.user?.id) fetchUserName(session.user.id);
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthenticated(!!session);
       setAuthUserId(session?.user?.id);
+      if (session?.user?.id) fetchUserName(session.user.id);
+      else setUserName(undefined);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Initialize encryption keys as soon as user logs in
+  const fetchUserName = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("username, full_name")
+      .eq("id", userId)
+      .single();
+    if (data) setUserName(data.full_name || data.username);
+  };
+
   useEncryptionInit(authUserId);
 
   if (loading) {
@@ -69,37 +80,51 @@ const AppRoutes = () => {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={
-        isInstalled ? (
-          isAuthenticated ? <Navigate to="/feed" replace /> : <Navigate to="/auth" replace />
-        ) : (
-          <Landing />
-        )
-      } />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/verify-email" element={<VerifyEmail />} />
-      <Route path="/feed" element={<Feed />} />
-      <Route path="/create" element={<CreatePost />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/settings" element={<Settings />} />
-      <Route path="/user/:userId" element={<UserProfile />} />
-      <Route path="/search" element={<Search />} />
-      <Route path="/notifications" element={<Notifications />} />
-      <Route path="/messages" element={<Messages />} />
-      <Route path="/install" element={<Install />} />
-      <Route path="/earnings" element={<Earnings />} />
-      <Route path="/admin" element={<AdminPanel />} />
-      <Route path="/post/:postId" element={<PostDetail />} />
-      <Route path="/wallet" element={<Wallet />} />
-      <Route path="/terms" element={<Terms />} />
-      <Route path="/privacy" element={<Privacy />} />
-      <Route path="/creators-school" element={<CreatorsSchool />} />
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      {isAuthenticated && <PushNotificationReminder userName={userName} />}
+      <Routes>
+        <Route path="/" element={
+          isInstalled ? (
+            isAuthenticated ? <Navigate to="/feed" replace /> : <Navigate to="/auth" replace />
+          ) : (
+            <Landing />
+          )
+        } />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/feed" element={<Feed />} />
+        <Route path="/create" element={<CreatePost />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/user/:userId" element={<UserProfile />} />
+        <Route path="/search" element={<Search />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/install" element={<Install />} />
+        <Route path="/earnings" element={<Earnings />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/post/:postId" element={<PostDetail />} />
+        <Route path="/wallet" element={<Wallet />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/creators-school" element={<CreatorsSchool />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
+};
+
+const AuthGatedAssistant = () => {
+  const [authed, setAuthed] = useState(false);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setAuthed(!!session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setAuthed(!!session));
+    return () => subscription.unsubscribe();
+  }, []);
+  if (!authed) return null;
+  return <AiAssistant />;
 };
 
 const App = () => (
@@ -110,7 +135,7 @@ const App = () => (
       
       <BrowserRouter>
         <AppRoutes />
-        <AiAssistant />
+        <AuthGatedAssistant />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
