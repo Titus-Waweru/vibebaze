@@ -5,9 +5,15 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
-// VAPID key from Firebase Console -> Project Settings -> Cloud Messaging -> Web Push certificates
-// Value comes from environment variable
 const VAPID_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
+
+// Detect device type
+const getDeviceType = (): string => {
+  const ua = navigator.userAgent.toLowerCase();
+  if (/mobile|android|iphone|ipad|ipod/.test(ua)) return "mobile";
+  if (/tablet|ipad/.test(ua)) return "tablet";
+  return "desktop";
+};
 
 export const usePushNotifications = () => {
   const { user } = useAuth();
@@ -20,7 +26,6 @@ export const usePushNotifications = () => {
   // Check if notifications are supported and get current status
   useEffect(() => {
     const checkSupport = async () => {
-      // Check browser support
       if (!("Notification" in window) || !("serviceWorker" in navigator)) {
         setIsSupported(false);
         setIsLoading(false);
@@ -29,17 +34,16 @@ export const usePushNotifications = () => {
 
       setIsSupported(true);
 
-      // Check if user has a token stored
+      // Check if this user has any tokens stored (multi-device)
       if (user) {
         const { data } = await supabase
           .from("push_subscriptions")
           .select("id, endpoint")
-          .eq("user_id", user.id)
-          .maybeSingle();
+          .eq("user_id", user.id);
 
-        setIsEnabled(!!data);
-        if (data) {
-          setFcmToken(data.endpoint);
+        setIsEnabled(!!(data && data.length > 0));
+        if (data && data.length > 0) {
+          setFcmToken(data[0].endpoint);
         }
       }
 
@@ -63,8 +67,6 @@ export const usePushNotifications = () => {
     };
   }, [navigate]);
 
-  // Register service worker and get FCM token
-  // Get current browser permission state
   const getPermissionState = useCallback((): NotificationPermission | "unsupported" => {
     if (!("Notification" in window)) return "unsupported";
     return Notification.permission;
@@ -79,7 +81,6 @@ export const usePushNotifications = () => {
     try {
       setIsLoading(true);
 
-      // Check current permission state
       const currentPermission = getPermissionState();
       
       if (currentPermission === "denied") {
@@ -93,7 +94,6 @@ export const usePushNotifications = () => {
         return false;
       }
 
-      // Request permission (only triggers browser prompt if state is "default")
       const permission = await Notification.requestPermission();
       if (permission !== "granted") {
         if (permission === "denied") {
@@ -108,11 +108,9 @@ export const usePushNotifications = () => {
         return false;
       }
 
-      // Use the PWA service worker (registered by vite-plugin-pwa)
       const registration = await navigator.serviceWorker.ready;
       console.log("[VibeBaze] Using PWA service worker for FCM:", registration);
 
-      // Initialize Firebase Messaging
       const messaging = await initializeMessaging();
       if (!messaging) {
         toast.error("Push notifications not supported in this browser");
@@ -120,7 +118,6 @@ export const usePushNotifications = () => {
         return false;
       }
 
-      // Get FCM token
       const token = await getToken(messaging, {
         vapidKey: VAPID_KEY,
         serviceWorkerRegistration: registration
@@ -135,16 +132,19 @@ export const usePushNotifications = () => {
       console.log("[VibeBaze] FCM Token obtained:", token.substring(0, 20) + "...");
       setFcmToken(token);
 
-      // Store token in database (using endpoint field for FCM token)
+      const deviceType = getDeviceType();
+
+      // Upsert token per device (unique on user_id + endpoint)
       const { error } = await supabase
         .from("push_subscriptions")
         .upsert({
           user_id: user.id,
           endpoint: token,
-          p256dh: "fcm-v1", // Marker for FCM V1 API
-          auth: "fcm-v1"    // Marker for FCM V1 API
+          p256dh: "fcm-v1",
+          auth: "fcm-v1",
+          device_type: deviceType
         }, {
-          onConflict: "user_id"
+          onConflict: "user_id,endpoint"
         });
 
       if (error) {
@@ -166,28 +166,24 @@ export const usePushNotifications = () => {
     }
   }, [user]);
 
-  // Disable notifications
+  // Disable notifications - removes ALL tokens for this user
   const disableNotifications = useCallback(async () => {
     if (!user) return false;
 
     try {
       setIsLoading(true);
 
-      // Remove token from database
       const { error } = await supabase
         .from("push_subscriptions")
         .delete()
         .eq("user_id", user.id);
 
       if (error) {
-        console.error("[VibeBaze] Error removing FCM token:", error);
+        console.error("[VibeBaze] Error removing FCM tokens:", error);
         toast.error("Failed to disable notifications");
         setIsLoading(false);
         return false;
       }
-
-      // Note: We don't unregister the PWA service worker as it handles caching too
-      // The FCM token deletion from the database is sufficient to stop notifications
 
       setIsEnabled(false);
       setFcmToken(null);
@@ -219,10 +215,29 @@ export const usePushNotifications = () => {
 
       if (newToken && newToken !== fcmToken) {
         console.log("[VibeBaze] Token refreshed");
+        const deviceType = getDeviceType();
+        
+        // If old token exists, remove it first then insert new
+        if (fcmToken) {
+          await supabase
+            .from("push_subscriptions")
+            .delete()
+            .eq("user_id", user.id)
+            .eq("endpoint", fcmToken);
+        }
+
         await supabase
           .from("push_subscriptions")
-          .update({ endpoint: newToken })
-          .eq("user_id", user.id);
+          .upsert({
+            user_id: user.id,
+            endpoint: newToken,
+            p256dh: "fcm-v1",
+            auth: "fcm-v1",
+            device_type: deviceType
+          }, {
+            onConflict: "user_id,endpoint"
+          });
+
         setFcmToken(newToken);
       }
     } catch (error) {
@@ -239,7 +254,6 @@ export const usePushNotifications = () => {
       const unsubscribe = onMessage(messaging, (payload) => {
         console.log("[VibeBaze] Foreground message received:", payload);
         
-        // Show toast for foreground notifications
         toast(payload.notification?.title || "New Notification", {
           description: payload.notification?.body,
           action: payload.data?.url ? {
@@ -259,7 +273,7 @@ export const usePushNotifications = () => {
   useEffect(() => {
     if (!isEnabled) return;
 
-    const interval = setInterval(refreshToken, 24 * 60 * 60 * 1000); // Every 24 hours
+    const interval = setInterval(refreshToken, 24 * 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [isEnabled, refreshToken]);
 
@@ -274,7 +288,7 @@ export const usePushNotifications = () => {
   };
 };
 
-// Utility function to send a push notification (for use in other hooks)
+// Utility function to send a push notification
 export const sendPushNotification = async (options: {
   userId?: string;
   userIds?: string[];
