@@ -12,6 +12,7 @@ import TipButton from "./TipButton";
 import { useWallet } from "@/hooks/useWallet";
 import { downloadWithWatermark } from "@/utils/downloadWithWatermark";
 import ReportContentDialog from "./ReportContentDialog";
+import { notifyPostLiked } from "@/lib/notificationService";
 
 // Check if post is less than 7 days old
 const isNewPost = (createdAt: string): boolean => {
@@ -107,6 +108,16 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
           .insert({ post_id: post.id, user_id: currentUserId });
         setIsLiked(true);
         setLikesCount(prev => prev + 1);
+
+        // Send push notification to post owner (fire-and-forget)
+        if (post.user_id !== currentUserId) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", currentUserId)
+            .maybeSingle();
+          notifyPostLiked(post.user_id, profile?.username || "Someone").catch(() => {});
+        }
       }
     } catch (error) {
       toast.error("Failed to update like");

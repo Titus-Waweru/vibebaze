@@ -8,6 +8,7 @@ import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import CommentReply from "./CommentReply";
+import { notifyPostComment } from "@/lib/notificationService";
 
 interface Comment {
   id: string;
@@ -127,6 +128,16 @@ const CommentSheet = ({
       fetchComments();
       onCommentCountChange?.((comments.length || 0) + 1);
       toast.success("Comment added!");
+
+      // Send push notification to post owner (fire-and-forget)
+      if (postOwnerId && postOwnerId !== currentUserId) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", currentUserId)
+          .maybeSingle();
+        notifyPostComment(postOwnerId, profile?.username || "Someone").catch(() => {});
+      }
     } catch (error: any) {
       toast.error(error.message || "Failed to add comment");
     } finally {
