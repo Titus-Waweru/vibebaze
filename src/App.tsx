@@ -26,6 +26,7 @@ import CreatorsSchool from "./pages/CreatorsSchool";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import NotFound from "./pages/NotFound";
+import AiAssistant from "@/components/AiAssistant";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -109,6 +110,7 @@ const App = () => (
       
       <BrowserRouter>
         <AppRoutes />
+        <AiAssistant />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
