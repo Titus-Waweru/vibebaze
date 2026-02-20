@@ -15,6 +15,9 @@ const getDeviceType = (): string => {
   return "desktop";
 };
 
+// Key to track if this device had notifications enabled previously
+const DEVICE_TOKEN_KEY = "vb_fcm_token";
+
 export const usePushNotifications = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -22,6 +25,87 @@ export const usePushNotifications = () => {
   const [isEnabled, setIsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [fcmToken, setFcmToken] = useState<string | null>(null);
+
+  // Save/upsert a token to the database
+  const saveTokenToDb = useCallback(async (token: string, userId: string) => {
+    const deviceType = getDeviceType();
+    const { error } = await supabase
+      .from("push_subscriptions")
+      .upsert({
+        user_id: userId,
+        endpoint: token,
+        p256dh: "fcm-v1",
+        auth: "fcm-v1",
+        device_type: deviceType
+      }, { onConflict: "user_id,endpoint" });
+
+    if (error) {
+      console.error("[VibeBaze] Error saving FCM token:", error);
+      return false;
+    }
+    return true;
+  }, []);
+
+  // Auto-refresh token if we previously had notifications enabled
+  const autoRefreshToken = useCallback(async (userId: string) => {
+    const storedToken = localStorage.getItem(DEVICE_TOKEN_KEY);
+    if (!storedToken) return;
+
+    // Notification permission must still be granted
+    if (Notification.permission !== "granted") {
+      localStorage.removeItem(DEVICE_TOKEN_KEY);
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const messaging = await initializeMessaging();
+      if (!messaging) return;
+
+      const freshToken = await getToken(messaging, {
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: registration
+      });
+
+      if (!freshToken) {
+        // Token could not be refreshed — remove stale entry
+        await supabase
+          .from("push_subscriptions")
+          .delete()
+          .eq("user_id", userId)
+          .eq("endpoint", storedToken);
+        localStorage.removeItem(DEVICE_TOKEN_KEY);
+        setIsEnabled(false);
+        setFcmToken(null);
+        return;
+      }
+
+      // Token changed — update DB
+      if (freshToken !== storedToken) {
+        console.log("[VibeBaze] Token refreshed on startup");
+        // Remove old token
+        await supabase
+          .from("push_subscriptions")
+          .delete()
+          .eq("user_id", userId)
+          .eq("endpoint", storedToken);
+
+        // Save new token
+        await saveTokenToDb(freshToken, userId);
+        localStorage.setItem(DEVICE_TOKEN_KEY, freshToken);
+        setFcmToken(freshToken);
+      } else {
+        // Token still valid — ensure it's in DB (re-upsert in case it was removed)
+        await saveTokenToDb(freshToken, userId);
+        setFcmToken(freshToken);
+      }
+
+      setIsEnabled(true);
+      console.log("[VibeBaze] FCM auto-refresh complete");
+    } catch (err) {
+      console.error("[VibeBaze] Auto-refresh failed:", err);
+    }
+  }, [saveTokenToDb]);
 
   // Check if notifications are supported and get current status
   useEffect(() => {
@@ -34,24 +118,28 @@ export const usePushNotifications = () => {
 
       setIsSupported(true);
 
-      // Check if this user has any tokens stored (multi-device)
       if (user) {
         const { data } = await supabase
           .from("push_subscriptions")
           .select("id, endpoint")
           .eq("user_id", user.id);
 
-        setIsEnabled(!!(data && data.length > 0));
-        if (data && data.length > 0) {
-          setFcmToken(data[0].endpoint);
+        const hasTokens = !!(data && data.length > 0);
+        setIsEnabled(hasTokens);
+        if (hasTokens) {
+          const stored = localStorage.getItem(DEVICE_TOKEN_KEY);
+          setFcmToken(stored || data[0].endpoint);
         }
+
+        // Auto-refresh: if this device previously had a token, refresh it silently
+        await autoRefreshToken(user.id);
       }
 
       setIsLoading(false);
     };
 
     checkSupport();
-  }, [user]);
+  }, [user, autoRefreshToken]);
 
   // Handle notification click navigation
   useEffect(() => {
@@ -132,30 +220,18 @@ export const usePushNotifications = () => {
       console.log("[VibeBaze] FCM Token obtained:", token.substring(0, 20) + "...");
       setFcmToken(token);
 
-      const deviceType = getDeviceType();
-
-      // Upsert token per device (unique on user_id + endpoint)
-      const { error } = await supabase
-        .from("push_subscriptions")
-        .upsert({
-          user_id: user.id,
-          endpoint: token,
-          p256dh: "fcm-v1",
-          auth: "fcm-v1",
-          device_type: deviceType
-        }, {
-          onConflict: "user_id,endpoint"
-        });
-
-      if (error) {
-        console.error("[VibeBaze] Error saving FCM token:", error);
+      const saved = await saveTokenToDb(token, user.id);
+      if (!saved) {
         toast.error("Failed to save notification settings");
         setIsLoading(false);
         return false;
       }
 
+      // Persist token on this device for auto-refresh
+      localStorage.setItem(DEVICE_TOKEN_KEY, token);
+
       setIsEnabled(true);
-      toast.success("Notifications enabled!");
+      toast.success("Notifications enabled! 🔔");
       setIsLoading(false);
       return true;
     } catch (error) {
@@ -164,27 +240,34 @@ export const usePushNotifications = () => {
       setIsLoading(false);
       return false;
     }
-  }, [user]);
+  }, [user, getPermissionState, saveTokenToDb]);
 
-  // Disable notifications - removes ALL tokens for this user
+  // Disable notifications - removes token for THIS device only
   const disableNotifications = useCallback(async () => {
     if (!user) return false;
 
     try {
       setIsLoading(true);
 
-      const { error } = await supabase
-        .from("push_subscriptions")
-        .delete()
-        .eq("user_id", user.id);
+      const currentToken = fcmToken || localStorage.getItem(DEVICE_TOKEN_KEY);
 
-      if (error) {
-        console.error("[VibeBaze] Error removing FCM tokens:", error);
-        toast.error("Failed to disable notifications");
-        setIsLoading(false);
-        return false;
+      if (currentToken) {
+        // Remove just this device's token
+        const { error } = await supabase
+          .from("push_subscriptions")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("endpoint", currentToken);
+
+        if (error) {
+          console.error("[VibeBaze] Error removing FCM token:", error);
+          toast.error("Failed to disable notifications");
+          setIsLoading(false);
+          return false;
+        }
       }
 
+      localStorage.removeItem(DEVICE_TOKEN_KEY);
       setIsEnabled(false);
       setFcmToken(null);
       toast.success("Notifications disabled");
@@ -196,7 +279,7 @@ export const usePushNotifications = () => {
       setIsLoading(false);
       return false;
     }
-  }, [user]);
+  }, [user, fcmToken]);
 
   // Refresh token if needed
   const refreshToken = useCallback(async () => {
@@ -215,9 +298,7 @@ export const usePushNotifications = () => {
 
       if (newToken && newToken !== fcmToken) {
         console.log("[VibeBaze] Token refreshed");
-        const deviceType = getDeviceType();
-        
-        // If old token exists, remove it first then insert new
+
         if (fcmToken) {
           await supabase
             .from("push_subscriptions")
@@ -226,24 +307,14 @@ export const usePushNotifications = () => {
             .eq("endpoint", fcmToken);
         }
 
-        await supabase
-          .from("push_subscriptions")
-          .upsert({
-            user_id: user.id,
-            endpoint: newToken,
-            p256dh: "fcm-v1",
-            auth: "fcm-v1",
-            device_type: deviceType
-          }, {
-            onConflict: "user_id,endpoint"
-          });
-
+        await saveTokenToDb(newToken, user.id);
+        localStorage.setItem(DEVICE_TOKEN_KEY, newToken);
         setFcmToken(newToken);
       }
     } catch (error) {
       console.error("[VibeBaze] Error refreshing token:", error);
     }
-  }, [user, isEnabled, fcmToken]);
+  }, [user, isEnabled, fcmToken, saveTokenToDb]);
 
   // Listen for foreground messages
   useEffect(() => {
@@ -269,10 +340,9 @@ export const usePushNotifications = () => {
     setupForegroundListener();
   }, [isEnabled, navigate]);
 
-  // Periodically refresh token
+  // Periodically refresh token every 24h
   useEffect(() => {
     if (!isEnabled) return;
-
     const interval = setInterval(refreshToken, 24 * 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [isEnabled, refreshToken]);

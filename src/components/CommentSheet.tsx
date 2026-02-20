@@ -75,22 +75,23 @@ const CommentSheet = ({
 
       if (error) throw error;
 
-      // Organize comments into a tree structure
+      // Organize comments into a tree structure (supports infinite depth, UI caps at 3 levels)
       const commentMap = new Map<string, Comment>();
       const rootComments: Comment[] = [];
 
-      // First pass: create all comments
+      // First pass: create all comment nodes
       (data || []).forEach((comment: any) => {
         commentMap.set(comment.id, { ...comment, replies: [] });
       });
 
-      // Second pass: organize into tree
+      // Second pass: nest into tree by parent_id
       commentMap.forEach((comment) => {
         if (comment.parent_id && commentMap.has(comment.parent_id)) {
           commentMap.get(comment.parent_id)!.replies!.push(comment);
         } else if (!comment.parent_id) {
           rootComments.push(comment);
         }
+        // Orphaned replies (parent deleted) are silently dropped
       });
 
       setComments(rootComments);
@@ -247,6 +248,7 @@ const CommentSheet = ({
                   onDelete={handleDelete}
                   onProfileClick={handleProfileClick}
                   formatTime={formatTime}
+                  depth={0}
                 />
               ))
             )}

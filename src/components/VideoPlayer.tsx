@@ -1,9 +1,11 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useVideoPlayback } from "@/contexts/VideoPlaybackContext";
 import { Badge } from "@/components/ui/badge";
-import { Play, Flame, TrendingUp, Sparkles, Eye } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Play, Flame, TrendingUp, Sparkles, Eye, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 interface VideoPlayerProps {
   src: string;
@@ -12,6 +14,8 @@ interface VideoPlayerProps {
   commentsCount?: number;
   viewsCount?: number;
   className?: string;
+  /** When true (guest mode), video will preview for PREVIEW_DURATION seconds then prompt signup */
+  isGuest?: boolean;
 }
 
 type VideoBadge = {
@@ -45,21 +49,35 @@ const getSessionId = (): string => {
   return sessionId;
 };
 
+// Preview duration in seconds before guest gate
+const PREVIEW_DURATION = 5;
+
+// Guest signup overlay messages — rotate randomly
+const GUEST_MESSAGES = [
+  { heading: "👀 Enjoying this?", subtext: "There are even better videos waiting for you!" },
+  { heading: "✨ Unlock Full Access", subtext: "Join VibeBaze to watch the full experience!" },
+  { heading: "🚀 You're missing out!", subtext: "Create an account to watch unlimited content." },
+];
+
 const VideoPlayer = ({ 
   src, 
   postId, 
   likesCount = 0, 
   commentsCount = 0, 
   viewsCount = 0,
-  className = "" 
+  className = "",
+  isGuest = false,
 }: VideoPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [viewRecorded, setViewRecorded] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [showGuestGate, setShowGuestGate] = useState(false);
+  const guestMsg = GUEST_MESSAGES[Math.floor(Math.random() * GUEST_MESSAGES.length)];
   const { setCurrentlyPlaying, registerVideo, unregisterVideo, currentlyPlayingId } = useVideoPlayback();
   const { user } = useAuth();
+  const navigate = useNavigate();
   
   const badge = getVideoBadge(likesCount, commentsCount, viewsCount);
 
@@ -68,7 +86,7 @@ const VideoPlayer = ({
     const video = videoRef.current;
     if (video && !video.paused) {
       video.pause();
-      video.currentTime = 0; // Reset to beginning
+      video.currentTime = 0;
       setIsPlaying(false);
     }
   }, []);
@@ -93,14 +111,13 @@ const VideoPlayer = ({
           setIsVisible(isNowVisible);
 
           if (isNowVisible) {
-            // This video is now visible - pause all others and play this one
             setCurrentlyPlaying(postId);
           }
         });
       },
       {
-        threshold: [0.5], // Trigger when 50% visible
-        rootMargin: "-10% 0px -10% 0px", // Add some margin
+        threshold: [0.5],
+        rootMargin: "-10% 0px -10% 0px",
       }
     );
 
@@ -115,6 +132,24 @@ const VideoPlayer = ({
     }
   }, [currentlyPlayingId, postId, isPlaying, pauseVideo]);
 
+  // Guest preview gate — pause after PREVIEW_DURATION seconds
+  useEffect(() => {
+    if (!isGuest) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => {
+      if (video.currentTime >= PREVIEW_DURATION && !showGuestGate) {
+        video.pause();
+        setIsPlaying(false);
+        setShowGuestGate(true);
+      }
+    };
+
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    return () => video.removeEventListener("timeupdate", handleTimeUpdate);
+  }, [isGuest, showGuestGate]);
+
   // Track view after 3 seconds of watching
   useEffect(() => {
     const video = videoRef.current;
@@ -123,7 +158,6 @@ const VideoPlayer = ({
     const handleTimeUpdate = async () => {
       if (viewRecorded) return;
       
-      // Record view after 3 seconds of watching
       if (video.currentTime >= 3) {
         setViewRecorded(true);
         
@@ -154,6 +188,9 @@ const VideoPlayer = ({
   };
 
   const handleClick = () => {
+    // Guest cannot replay after gate shows
+    if (isGuest && showGuestGate) return;
+
     const video = videoRef.current;
     if (!video) return;
 
@@ -180,14 +217,40 @@ const VideoPlayer = ({
         </div>
       )}
 
-      {/* Play Overlay when paused */}
-      {!isPlaying && (
+      {/* Play Overlay when paused (and no guest gate) */}
+      {!isPlaying && !showGuestGate && (
         <div 
           className="absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer z-10 transition-opacity group-hover:bg-black/30"
           onClick={handleClick}
         >
           <div className="w-16 h-16 rounded-full bg-primary/80 backdrop-blur-sm flex items-center justify-center shadow-glow animate-scale-in">
             <Play className="h-8 w-8 text-primary-foreground ml-1" fill="currentColor" />
+          </div>
+        </div>
+      )}
+
+      {/* Guest signup gate overlay */}
+      {showGuestGate && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/75 backdrop-blur-sm px-6 text-center space-y-4 animate-in fade-in duration-500">
+          <div className="space-y-1">
+            <h3 className="text-white text-xl font-bold">{guestMsg.heading}</h3>
+            <p className="text-white/80 text-sm">{guestMsg.subtext}</p>
+          </div>
+          <div className="flex gap-3">
+            <Button
+              onClick={() => navigate("/auth?mode=signup")}
+              className="bg-primary text-primary-foreground gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              Sign Up Free
+            </Button>
+            <Button
+              variant="outline"
+              className="border-white/30 text-white hover:bg-white/10"
+              onClick={() => navigate("/auth")}
+            >
+              Sign In
+            </Button>
           </div>
         </div>
       )}
@@ -202,7 +265,7 @@ const VideoPlayer = ({
         onPlay={handlePlay}
         onPause={handlePause}
         onEnded={pauseVideo}
-        controls={isPlaying}
+        controls={isPlaying && !isGuest}
         muted={false}
         onError={() => {
           const container = containerRef.current;
