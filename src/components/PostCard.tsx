@@ -279,6 +279,7 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
             likesCount={likesCount}
             commentsCount={commentsCount}
             viewsCount={post.views_count}
+            isGuest={!currentUserId}
           />
         )}
         {post.type === "audio" && post.media_url && (

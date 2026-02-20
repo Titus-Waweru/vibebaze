@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, Bell, Loader2, Shield, Flag, Users, Activity, LayoutDashboard, Wallet } from "lucide-react";
+import { ArrowLeft, Bell, Loader2, Shield, Flag, Users, Activity, LayoutDashboard, Wallet, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminModerationTab from "@/components/admin/AdminModerationTab";
@@ -14,6 +14,7 @@ import AdminLogsTab from "@/components/admin/AdminLogsTab";
 import AdminWalletsTab from "@/components/admin/AdminWalletsTab";
 import AdminDashboardTab from "@/components/admin/AdminDashboardTab";
 import AdminMessagingTab from "@/components/admin/AdminMessagingTab";
+import AdminLikesTab from "@/components/admin/AdminLikesTab";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -100,7 +101,7 @@ const AdminPanel = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid grid-cols-7 w-full">
+          <TabsList className="grid grid-cols-8 w-full">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <LayoutDashboard className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -116,6 +117,10 @@ const AdminPanel = () => {
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Users</span>
+            </TabsTrigger>
+            <TabsTrigger value="likes" className="flex items-center gap-2">
+              <Heart className="h-4 w-4" />
+              <span className="hidden sm:inline">Likes</span>
             </TabsTrigger>
             <TabsTrigger value="wallets" className="flex items-center gap-2">
               <Wallet className="h-4 w-4" />
@@ -145,6 +150,10 @@ const AdminPanel = () => {
 
           <TabsContent value="users">
             <AdminUsersTab />
+          </TabsContent>
+
+          <TabsContent value="likes">
+            <AdminLikesTab />
           </TabsContent>
 
           <TabsContent value="wallets">

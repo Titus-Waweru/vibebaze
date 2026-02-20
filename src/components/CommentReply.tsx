@@ -29,8 +29,11 @@ interface CommentReplyProps {
   onDelete: (commentId: string) => Promise<void>;
   onProfileClick: (userId: string) => void;
   formatTime: (date: string) => string;
-  isReply?: boolean;
+  /** Current nesting depth. 0 = root, 1 = first reply, 2 = second reply (max) */
+  depth?: number;
 }
+
+const MAX_DEPTH = 2; // 0-indexed → 3 visible levels
 
 const CommentReply = ({
   comment,
@@ -40,7 +43,7 @@ const CommentReply = ({
   onDelete,
   onProfileClick,
   formatTime,
-  isReply = false,
+  depth = 0,
 }: CommentReplyProps) => {
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [replyContent, setReplyContent] = useState("");
@@ -49,6 +52,9 @@ const CommentReply = ({
 
   const canDelete = currentUserId === comment.user_id || currentUserId === postOwnerId;
   const hasReplies = comment.replies && comment.replies.length > 0;
+  const isReply = depth > 0;
+  // Only allow replying up to MAX_DEPTH levels
+  const canReply = currentUserId && depth < MAX_DEPTH;
 
   const handleReplySubmit = async () => {
     if (!replyContent.trim()) return;
@@ -65,9 +71,17 @@ const CommentReply = ({
   };
 
   return (
-    <div className={cn("flex gap-3 group", isReply && "ml-8 border-l-2 border-border/50 pl-4")}>
+    <div className={cn(
+      "flex gap-3 group",
+      isReply && "border-l-2 border-border/50 pl-4",
+      depth === 1 && "ml-8",
+      depth === 2 && "ml-6",
+    )}>
       <Avatar
-        className={cn("cursor-pointer ring-2 ring-primary/10", isReply ? "h-6 w-6" : "h-8 w-8")}
+        className={cn(
+          "cursor-pointer ring-2 ring-primary/10 shrink-0",
+          depth === 0 ? "h-8 w-8" : "h-6 w-6"
+        )}
         onClick={() => onProfileClick(comment.user_id)}
       >
         <AvatarImage src={comment.profiles?.avatar_url || undefined} />
@@ -93,7 +107,7 @@ const CommentReply = ({
         
         {/* Action Buttons */}
         <div className="flex items-center gap-3 pt-1">
-          {currentUserId && !isReply && (
+          {canReply && (
             <button
               onClick={() => setShowReplyInput(!showReplyInput)}
               className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
@@ -156,7 +170,7 @@ const CommentReply = ({
           </div>
         )}
         
-        {/* Nested Replies */}
+        {/* Nested Replies — recurse up to MAX_DEPTH */}
         {showReplies && hasReplies && (
           <div className="space-y-3 pt-2">
             {comment.replies!.map((reply) => (
@@ -169,7 +183,7 @@ const CommentReply = ({
                 onDelete={onDelete}
                 onProfileClick={onProfileClick}
                 formatTime={formatTime}
-                isReply
+                depth={depth + 1}
               />
             ))}
           </div>
