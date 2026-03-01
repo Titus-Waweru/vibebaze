@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import { Loader2, MessageCircle, Sparkles, Users, Flame } from "lucide-react";
 import { VideoPlaybackProvider } from "@/contexts/VideoPlaybackContext";
 import { Button } from "@/components/ui/button";
+import SEO from "@/components/SEO";
 
 // Calculate engagement score for ranking
 const calculateEngagementScore = (post: any): number => {
@@ -204,9 +205,9 @@ const Feed = () => {
 
   return (
     <VideoPlaybackProvider>
+      <SEO title="Feed | VibeBaze" description="Discover trending videos, photos, and vibes from African creators on VibeBaze." path="/feed" />
       <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
         <Navbar />
-        
         {/* Fixed Top Header - Mobile */}
         <div className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b border-border md:hidden">
           <div className="flex items-center justify-between px-4 h-14">

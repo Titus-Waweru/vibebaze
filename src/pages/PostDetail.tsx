@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, UserPlus } from "lucide-react";
 import { VideoPlaybackProvider } from "@/contexts/VideoPlaybackContext";
 import { Card, CardContent } from "@/components/ui/card";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
+import SEO from "@/components/SEO";
 
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
@@ -108,9 +109,14 @@ const PostDetail = () => {
 
   return (
     <VideoPlaybackProvider>
+      <SEO
+        title={post ? `${post.profiles?.username || "Creator"}: ${(post.caption || "").slice(0, 50)} | VibeBaze` : "Post | VibeBaze"}
+        description={post?.caption || "Watch this on VibeBaze — Africa's creator platform."}
+        path={`/post/${postId}`}
+        image={post?.thumbnail_url || post?.media_url || undefined}
+      />
       <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
         <Navbar />
-        
         <div className="container mx-auto px-4 pt-6 max-w-2xl">
           <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
             <ArrowLeft className="h-4 w-4 mr-2" />

@@ -5,11 +5,13 @@ import heroGradient from "@/assets/hero-gradient.jpg";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
 import { InstallBanner } from "@/components/InstallBanner";
 import { Footer } from "@/components/Footer";
+import SEO from "@/components/SEO";
 
 const Landing = () => {
   const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-background overflow-hidden flex flex-col">
+      <SEO path="/" />
       <InstallBanner />
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center">

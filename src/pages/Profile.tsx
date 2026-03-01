@@ -13,6 +13,7 @@ import FollowListModal from "@/components/FollowListModal";
 import ReferralCard from "@/components/ReferralCard";
 import VibePointsCard from "@/components/VibePointsCard";
 import DeletePostButton from "@/components/DeletePostButton";
+import SEO from "@/components/SEO";
 
 const Profile = () => {
   const { user, loading: authLoading } = useAuth();
@@ -98,8 +99,8 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
+      <SEO title={`${profile.username} | VibeBaze`} description={profile.bio || `Check out ${profile.username}'s profile on VibeBaze.`} path="/profile" />
       <Navbar />
-      
       <div className="container mx-auto px-4 pt-6 max-w-2xl">
         <Card className="border-border/50 shadow-card">
           <CardContent className="pt-6">
