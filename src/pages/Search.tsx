@@ -9,6 +9,7 @@ import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import SEO from "@/components/SEO";
 
 type SearchTab = "users" | "hashtags" | "posts";
 
@@ -154,8 +155,8 @@ const Search = () => {
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
+      <SEO title="Discover Creators & Content | VibeBaze" description="Find trending creators, hashtags, and viral vibes on VibeBaze. Search Africa's creator community." path="/search" />
       <Navbar />
-      
       {/* Fixed Top Header - Mobile */}
       <div className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b border-border md:hidden">
         <div className="flex items-center justify-between px-4 h-14">

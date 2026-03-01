@@ -1,12 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import SEO from "@/components/SEO";
 
 const Privacy = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background pb-8">
+      <SEO title="Privacy Policy | VibeBaze" description="VibeBaze privacy policy. Learn how we protect your data, handle M-PESA transactions, and comply with Kenya's Data Protection Act." path="/privacy" />
 
       <div className="container mx-auto px-4 pt-6 max-w-3xl">
         {/* Header */}

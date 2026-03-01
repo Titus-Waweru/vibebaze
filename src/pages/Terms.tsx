@@ -1,12 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import SEO from "@/components/SEO";
 
 const Terms = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background pb-8">
+      <SEO title="Terms & Conditions | VibeBaze" description="Read VibeBaze's terms and conditions. Learn about eligibility, content guidelines, monetization, and your rights as an African creator." path="/terms" />
 
       <div className="container mx-auto px-4 pt-6 max-w-3xl">
         {/* Header */}
