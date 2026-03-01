@@ -19,6 +19,17 @@ const Auth = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const referralCode = searchParams.get("ref");
+
+  // Redirect authenticated users away from auth page
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) navigate("/feed", { replace: true });
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) navigate("/feed", { replace: true });
+    });
+    return () => subscription.unsubscribe();
+  }, [navigate]);
   const defaultTab = searchParams.get("mode") === "signup" || referralCode ? "signup" : "login";
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
