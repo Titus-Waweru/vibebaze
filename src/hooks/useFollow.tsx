@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { notifyNewFollower } from "@/lib/notificationService";
 
 export const useFollow = (targetUserId: string | undefined, currentUserId: string | undefined) => {
   const [isFollowing, setIsFollowing] = useState(false);
@@ -66,6 +67,16 @@ export const useFollow = (targetUserId: string | undefined, currentUserId: strin
         if (error) throw error;
         setIsFollowing(true);
         toast.success("Following!");
+
+        // Send push notification to followed user (fire-and-forget)
+        if (currentUserId) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("username")
+            .eq("id", currentUserId)
+            .maybeSingle();
+          notifyNewFollower(targetUserId, profile?.username || "Someone").catch(() => {});
+        }
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to update follow status");

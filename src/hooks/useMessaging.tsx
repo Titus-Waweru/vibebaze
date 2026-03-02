@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEncryption } from "./useEncryption";
 import { toast } from "sonner";
+import { notifyNewMessage } from "@/lib/notificationService";
 
 interface Message {
   id: string;
@@ -218,6 +219,14 @@ export const useMessaging = (userId: string | undefined) => {
           .from("conversations")
           .update({ last_message_at: new Date().toISOString() })
           .eq("id", conversationId);
+
+        // Send push notification to recipient (fire-and-forget)
+        const { data: senderProfile } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", userId)
+          .maybeSingle();
+        notifyNewMessage(recipientId, senderProfile?.username || "Someone").catch(() => {});
 
         // Add to local messages
         setMessages((prev) => [

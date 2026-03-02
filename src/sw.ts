@@ -36,13 +36,17 @@ messaging.onBackgroundMessage((payload: any) => {
   console.log("[VibeBaze] Background message received:", payload);
 
   const title = payload.notification?.title || "VibeBaze";
-  const options: NotificationOptions & { data?: Record<string, string>; vibrate?: number[] } = {
+  const notifTag = payload.data?.tag
+    ? `${payload.data.tag}-${Date.now()}`
+    : `vibebaze-${Date.now()}`;
+  const options: NotificationOptions & { data?: Record<string, string>; vibrate?: number[]; requireInteraction?: boolean } = {
     body: payload.notification?.body || "You have a new notification",
     icon: "/pwa-192x192.png",
     badge: "/pwa-192x192.png",
     data: payload.data || {},
     vibrate: [200, 100, 200],
-    tag: payload.data?.tag || "vibebaze-notification",
+    tag: notifTag,
+    requireInteraction: true,
   };
 
   self.registration.showNotification(title, options);
