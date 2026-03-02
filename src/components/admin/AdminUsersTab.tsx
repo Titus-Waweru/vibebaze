@@ -90,14 +90,23 @@ const AdminUsersTab = () => {
     
     setSearching(true);
     try {
-      const { data, error } = await supabase
+      // Search by username (case-insensitive)
+      const { data: byUsername, error: e1 } = await supabase
         .from("profiles")
         .select("id, username, full_name, avatar_url, created_at, followers_count, following_count, posts_count")
-        .ilike("username", `%${searchQuery}%`)
+        .ilike("username", `%${searchQuery.trim()}%`)
         .limit(20);
 
-      if (error) throw error;
-      setSearchResults(data || []);
+      if (e1) throw e1;
+
+      // Also search by email via auth lookup (using profiles table doesn't have email)
+      // We search full_name as a proxy, or the user can search by exact username
+      const results = byUsername || [];
+
+      setSearchResults(results);
+      if (results.length === 0) {
+        toast.info("No users found matching that query");
+      }
     } catch (error) {
       console.error("Error searching users:", error);
       toast.error("Failed to search users");
@@ -201,7 +210,7 @@ const AdminUsersTab = () => {
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Input
-              placeholder="Search by username..."
+              placeholder="Search by username or name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}

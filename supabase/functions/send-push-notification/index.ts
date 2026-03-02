@@ -100,7 +100,14 @@ async function sendFCMNotification(
             token: fcmToken,
             notification: { title, body },
             webpush: {
-              notification: { title, body, icon: "/pwa-192x192.png", badge: "/pwa-192x192.png" },
+              notification: {
+                title,
+                body,
+                icon: "/pwa-192x192.png",
+                badge: "/pwa-192x192.png",
+                tag: data.tag || `vibebaze-${Date.now()}`,
+                requireInteraction: true,
+              },
               fcm_options: { link: data.url || "/feed" },
             },
             data,

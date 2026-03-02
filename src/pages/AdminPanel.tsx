@@ -120,7 +120,7 @@ const AdminPanel = () => {
             </TabsTrigger>
             <TabsTrigger value="likes" className="flex items-center gap-2">
               <Heart className="h-4 w-4" />
-              <span className="hidden sm:inline">Likes</span>
+              <span className="hidden sm:inline">Stats</span>
             </TabsTrigger>
             <TabsTrigger value="wallets" className="flex items-center gap-2">
               <Wallet className="h-4 w-4" />
