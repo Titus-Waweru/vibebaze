@@ -99,7 +99,12 @@ async function sendFCMNotification(
           message: {
             token: fcmToken,
             notification: { title, body },
+            android: {
+              priority: "HIGH" as const,
+              notification: { title, body, icon: "ic_notification" },
+            },
             webpush: {
+              headers: { Urgency: "high", TTL: "86400" },
               notification: {
                 title,
                 body,

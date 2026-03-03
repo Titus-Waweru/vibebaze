@@ -20,16 +20,18 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const referralCode = searchParams.get("ref");
 
+  const redirectTo = searchParams.get("redirect") || "/feed";
+
   // Redirect authenticated users away from auth page
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate("/feed", { replace: true });
+      if (session) navigate(redirectTo, { replace: true });
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) navigate("/feed", { replace: true });
+      if (session) navigate(redirectTo, { replace: true });
     });
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, redirectTo]);
   const defaultTab = searchParams.get("mode") === "signup" || referralCode ? "signup" : "login";
 
   const [loginData, setLoginData] = useState({ email: "", password: "" });
@@ -60,7 +62,6 @@ const Auth = () => {
       toast.error(error.message);
     } else {
       toast.success("Welcome back!");
-      navigate("/feed");
     }
   };
 
