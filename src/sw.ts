@@ -52,6 +52,34 @@ messaging.onBackgroundMessage((payload: any) => {
   self.registration.showNotification(title, options);
 });
 
+// Fallback: handle raw push events not caught by Firebase SDK
+self.addEventListener("push", (event) => {
+  // Firebase SDK handles its own messages; this catches any raw pushes
+  if (!event.data) return;
+  try {
+    const payload = event.data.json();
+    // Skip if Firebase SDK already handled this (it sets notification field)
+    if (payload.notification) return;
+    
+    const title = payload.data?.title || "VibeBaze";
+    const body = payload.data?.body || "You have a new notification";
+    const tag = payload.data?.tag ? `${payload.data.tag}-${Date.now()}` : `vibebaze-push-${Date.now()}`;
+    
+    event.waitUntil(
+      self.registration.showNotification(title, {
+        body,
+        icon: "/pwa-192x192.png",
+        badge: "/pwa-192x192.png",
+        tag,
+        requireInteraction: true,
+        data: payload.data || {},
+      } as NotificationOptions)
+    );
+  } catch {
+    // Not JSON or already handled
+  }
+});
+
 // Handle notification click
 self.addEventListener("notificationclick", (event) => {
   console.log("[VibeBaze] Notification clicked:", event);

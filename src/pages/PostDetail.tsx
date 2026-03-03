@@ -140,11 +140,11 @@ const PostDetail = () => {
                   Sign up to like, comment, tip creators, download content, and share your own vibes!
                 </p>
                 <div className="flex gap-3 justify-center">
-                  <Button onClick={() => navigate("/auth?mode=signup")} className="bg-gradient-primary gap-2">
+                  <Button onClick={() => navigate(`/auth?mode=signup&redirect=${encodeURIComponent(`/post/${postId}`)}`)} className="bg-gradient-primary gap-2">
                     <UserPlus className="h-4 w-4" />
                     Sign Up Free
                   </Button>
-                  <Button variant="outline" onClick={() => navigate("/auth")}>
+                  <Button variant="outline" onClick={() => navigate(`/auth?redirect=${encodeURIComponent(`/post/${postId}`)}`)}>
                     Sign In
                   </Button>
                 </div>

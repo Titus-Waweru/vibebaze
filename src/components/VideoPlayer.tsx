@@ -238,7 +238,7 @@ const VideoPlayer = ({
           </div>
           <div className="flex gap-3">
             <Button
-              onClick={() => navigate("/auth?mode=signup")}
+              onClick={() => navigate(`/auth?mode=signup&redirect=${encodeURIComponent(`/post/${postId}`)}`)}
               className="bg-primary text-primary-foreground gap-2"
             >
               <UserPlus className="h-4 w-4" />
@@ -247,7 +247,7 @@ const VideoPlayer = ({
             <Button
               variant="outline"
               className="border-white/30 text-white hover:bg-white/10"
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate(`/auth?redirect=${encodeURIComponent(`/post/${postId}`)}`)}
             >
               Sign In
             </Button>
