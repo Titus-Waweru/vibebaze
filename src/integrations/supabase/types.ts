@@ -677,6 +677,7 @@ export type Database = {
           caption: string | null
           comments_count: number | null
           created_at: string | null
+          edited_at: string | null
           hashtags: string[] | null
           id: string
           is_private: boolean | null
@@ -693,6 +694,7 @@ export type Database = {
           caption?: string | null
           comments_count?: number | null
           created_at?: string | null
+          edited_at?: string | null
           hashtags?: string[] | null
           id?: string
           is_private?: boolean | null
@@ -709,6 +711,7 @@ export type Database = {
           caption?: string | null
           comments_count?: number | null
           created_at?: string | null
+          edited_at?: string | null
           hashtags?: string[] | null
           id?: string
           is_private?: boolean | null
