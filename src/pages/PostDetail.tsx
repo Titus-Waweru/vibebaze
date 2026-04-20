@@ -11,6 +11,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
 import SEO from "@/components/SEO";
 
+const DEFAULT_PREVIEW = "https://www.vibebaze.com/social-preview.png";
+
 const PostDetail = () => {
   const { postId } = useParams<{ postId: string }>();
   const { user, loading: authLoading } = useAuth();

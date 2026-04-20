@@ -1,6 +1,17 @@
 {
   "rewrites": [
     {
+      "source": "/post/:postId",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(.*(facebookexternalhit|Facebot|Twitterbot|LinkedInBot|WhatsApp|Slackbot|TelegramBot|Discordbot|Pinterest|redditbot|TikTokBot|Bytespider|Applebot|Googlebot|bingbot).*)"
+        }
+      ],
+      "destination": "https://tgqhclcuvirakmczmqof.supabase.co/functions/v1/og-image?id=:postId"
+    },
+    {
       "source": "/((?!api/|sitemap\\.xml|robots\\.txt|manifest\\.webmanifest|firebase-messaging-sw\\.js|pwa-.*\\.png|vibebaze-favicon\\.png).*)",
       "destination": "/index.html"
     }
