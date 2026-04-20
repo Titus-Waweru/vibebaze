@@ -130,6 +130,7 @@ const CreatorsSchool = () => {
   };
 
   if (selectedLesson) {
+    const content = lessonContent[selectedLesson.id];
     return (
       <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
         <Navbar />
@@ -146,34 +147,88 @@ const CreatorsSchool = () => {
 
           <Card className="border-border/50 shadow-card">
             <CardContent className="pt-6">
-              {/* Video placeholder */}
-              <div className="aspect-video bg-muted rounded-lg flex items-center justify-center mb-6">
-                <div className="text-center">
-                  <PlayCircle className="h-16 w-16 text-primary mx-auto mb-4" />
-                  <p className="text-muted-foreground">Lesson video coming soon!</p>
+              {content?.hero && (
+                <div className="aspect-video rounded-lg overflow-hidden mb-6 bg-muted">
+                  <img
+                    src={content.hero}
+                    alt={selectedLesson.title}
+                    loading="lazy"
+                    width={1024}
+                    height={640}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-              </div>
+              )}
 
-              <h2 className="text-lg font-semibold mb-2">{selectedLesson.title}</h2>
-              <p className="text-muted-foreground mb-6">{selectedLesson.description}</p>
+              <h2 className="text-2xl font-bold mb-3 text-foreground">{selectedLesson.title}</h2>
+              <p className="text-muted-foreground mb-6 leading-relaxed">
+                {content?.intro ?? selectedLesson.description}
+              </p>
 
-              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
-                <h3 className="font-medium text-foreground mb-2">Key Takeaways</h3>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
-                    <span>Interactive lessons tailored for African creators</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
-                    <span>Practical tips you can apply immediately</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
-                    <span>Earn badges as you complete modules</span>
-                  </li>
-                </ul>
-              </div>
+              {content?.sections.map((section, i) => (
+                <div key={i} className="mb-8">
+                  {section.heading && (
+                    <h3 className="text-lg font-semibold mb-3 text-foreground">
+                      {section.heading}
+                    </h3>
+                  )}
+                  {section.image && (
+                    <div className="aspect-video rounded-lg overflow-hidden mb-3 bg-muted border border-border/50">
+                      <img
+                        src={section.image}
+                        alt={section.heading ?? ""}
+                        loading="lazy"
+                        width={1024}
+                        height={640}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  {section.imageCaption && (
+                    <p className="text-xs text-muted-foreground italic mb-3 text-center">
+                      {section.imageCaption}
+                    </p>
+                  )}
+                  {section.body && (
+                    <p className="text-sm text-foreground/90 mb-3 whitespace-pre-line leading-relaxed">
+                      {section.body}
+                    </p>
+                  )}
+                  {section.bullets && (
+                    <ul className="space-y-2 mb-3">
+                      {section.bullets.map((b, j) => (
+                        <li key={j} className="flex items-start gap-2 text-sm text-foreground/90">
+                          <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                          <span>{b}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {section.tip && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-accent/10 border border-accent/30">
+                      <Lightbulb className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-foreground/90">
+                        <span className="font-semibold">Pro tip: </span>
+                        {section.tip}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {content?.takeaways && (
+                <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                  <h3 className="font-medium text-foreground mb-2">Key Takeaways</h3>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
+                    {content.takeaways.map((t, i) => (
+                      <li key={i} className="flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <span>{t}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <Button className="w-full mt-6 bg-gradient-primary hover:shadow-glow">
                 <CheckCircle2 className="h-4 w-4 mr-2" />
