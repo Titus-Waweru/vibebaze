@@ -1,12 +1,11 @@
 /// <reference lib="webworker" />
+import { precacheAndRoute } from "workbox-precaching";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-declare const self: any;
+declare const self: ServiceWorkerGlobalScope & typeof globalThis;
 declare function importScripts(...urls: string[]): void;
 
-// Workbox precache manifest injection point (required by vite-plugin-pwa injectManifest)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _precache = self.__WB_MANIFEST;
+// Workbox precache (required by vite-plugin-pwa injectManifest)
+precacheAndRoute(self.__WB_MANIFEST);
 
 
 // Firebase Cloud Messaging
