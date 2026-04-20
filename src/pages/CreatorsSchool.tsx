@@ -20,7 +20,9 @@ import {
   PlayCircle,
   BookOpen,
   Star,
+  Lightbulb,
 } from "lucide-react";
+import { lessonContent } from "@/data/lessonContent";
 
 interface Lesson {
   id: string;
