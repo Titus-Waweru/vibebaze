@@ -14,84 +14,102 @@ const Landing = () => {
       <SEO path="/" />
       <InstallBanner />
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center">
+      <section className="relative min-h-screen flex items-center justify-center pt-12 pb-20">
         {/* Background with gradient overlay */}
         <div className="absolute inset-0 z-0">
-          <img src={heroGradient} alt="VibeBaze Background" className="w-full h-full object-cover opacity-40" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+          <img src={heroGradient} alt="" aria-hidden className="w-full h-full object-cover opacity-30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/85 to-background" />
         </div>
 
         {/* Floating orbs */}
         <div className="absolute top-20 left-10 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-float" style={{
-          animationDelay: "1s"
-        }} />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-float" style={{ animationDelay: "1s" }} />
 
         {/* Content */}
-        <div className="relative z-10 container mx-auto px-4 text-center">
-          <div className="animate-fade-in">
-            {/* Logo */}
-            <div className="flex justify-center mb-6">
-              <img src={vibebazeLogo} alt="VibeBaze Logo" className="h-24 w-24 md:h-32 md:w-32 object-contain animate-float" />
+        <div className="relative z-10 container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center max-w-7xl mx-auto">
+            {/* Left: copy */}
+            <div className="text-center lg:text-left animate-fade-in">
+              <div className="flex justify-center lg:justify-start mb-6">
+                <img src={vibebazeLogo} alt="VibeBaze Logo" className="h-20 w-20 md:h-24 md:w-24 object-contain animate-float" />
+              </div>
+
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
+                <Globe className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium text-primary">Africa's Creator Platform 🌍</span>
+              </div>
+
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent leading-[1.05] tracking-tight">
+                VibeBaze
+              </h1>
+              <p className="text-xl md:text-2xl text-foreground/90 mb-3 max-w-xl mx-auto lg:mx-0 font-medium">
+                Express yourself. Connect authentically. Earn from your creativity.
+              </p>
+              <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-xl mx-auto lg:mx-0">
+                Built for African creators — monetize with M-PESA, no barriers.
+              </p>
+
+              <div className="flex gap-3 justify-center lg:justify-start flex-wrap">
+                <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-accent-glow hover:scale-[1.02] transition-all duration-300 text-base px-7 h-12" onClick={() => navigate("/auth?mode=signup")}>
+                  Get Started
+                  <Sparkles className="ml-2 h-4 w-4" />
+                </Button>
+                <Button size="lg" variant="outline" className="border-primary/40 hover:bg-primary/10 text-base px-7 h-12" onClick={() => navigate("/auth?mode=login")}>
+                  Sign In
+                </Button>
+              </div>
+
+              <div className="mt-5">
+                <Button variant="ghost" className="text-muted-foreground hover:text-primary hover:bg-primary/10 gap-2 text-sm" onClick={() => navigate("/install")}>
+                  <Download className="h-4 w-4" />
+                  Install App for Offline Access
+                </Button>
+              </div>
             </div>
-            
-            {/* African-First Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-6">
-              <Globe className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium text-primary">Africa's Creator Platform 🌍</span>
-            </div>
-            
-            <h1 className="text-6xl md:text-8xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">VibeBaze</h1>
-            <p className="text-xl md:text-2xl text-muted-foreground mb-4 max-w-2xl mx-auto">
-              Express yourself. Connect authentically. Earn from your creativity.
-            </p>
-            <p className="text-lg text-primary/80 mb-8 max-w-xl mx-auto">
-              Built for African creators — monetize with M-PESA, no barriers.
-            </p>
-            <div className="flex gap-4 justify-center flex-wrap">
-              <Button size="lg" className="bg-gradient-primary text-primary-foreground shadow-glow hover:shadow-accent-glow transition-all duration-300 text-lg px-8 py-6" onClick={() => navigate("/auth?mode=signup")}>
-                Get Started
-                <Sparkles className="ml-2 h-5 w-5" />
-              </Button>
-              <Button size="lg" variant="outline" className="border-primary/50 hover:bg-primary/10 text-lg px-8 py-6" onClick={() => navigate("/auth?mode=login")}>
-                Sign In
-              </Button>
-            </div>
-            
-            {/* Install App Banner */}
-            <div className="mt-6">
-              <Button variant="ghost" className="text-muted-foreground hover:text-primary hover:bg-primary/10 gap-2" onClick={() => navigate("/install")}>
-                <Download className="h-4 w-4" />
-                Install App for Offline Access
-              </Button>
+
+            {/* Right: realistic phone/feed mockup */}
+            <div className="relative hidden lg:block animate-slide-up">
+              <div className="relative mx-auto w-[320px] aspect-[9/19] rounded-[2.5rem] bg-gradient-to-br from-card to-card/40 border border-border/60 shadow-2xl overflow-hidden backdrop-blur-xl">
+                <div className="absolute top-0 inset-x-0 h-7 bg-background/60 flex items-center justify-center">
+                  <div className="w-20 h-5 rounded-b-2xl bg-background/80" />
+                </div>
+                <div className="pt-10 px-4 space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-background/70 backdrop-blur rounded-2xl p-3 border border-border/40">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-8 w-8 rounded-full bg-gradient-primary" />
+                        <div className="flex-1">
+                          <div className="h-2.5 w-20 bg-foreground/20 rounded" />
+                          <div className="h-2 w-12 bg-foreground/10 rounded mt-1" />
+                        </div>
+                      </div>
+                      <div className="aspect-video rounded-xl bg-gradient-to-br from-primary/30 via-accent/20 to-primary/10" />
+                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                        <Heart className="h-3.5 w-3.5 text-primary" /> <span>{i * 1234}</span>
+                        <Zap className="h-3.5 w-3.5 text-accent" /> <span>KSh {i * 50}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="absolute -z-10 inset-0 bg-gradient-primary opacity-20 blur-3xl rounded-full" />
             </div>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20 max-w-4xl mx-auto animate-slide-up" style={{
-            animationDelay: "0.2s"
-          }}>
-            {[{
-              icon: Users,
-              label: "African Creators",
-              value: "10K+"
-            }, {
-              icon: Heart,
-              label: "Daily Vibes",
-              value: "50K+"
-            }, {
-              icon: Zap,
-              label: "M-PESA Transactions",
-              value: "1K+"
-            }, {
-              icon: Sparkles,
-              label: "Communities",
-              value: "500+"
-            }].map((stat, index) => <div key={index} className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
-                <stat.icon className="h-8 w-8 text-primary mx-auto mb-2" />
-                <div className="text-3xl font-bold text-foreground">{stat.value}</div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
-              </div>)}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-20 max-w-5xl mx-auto animate-slide-up" style={{ animationDelay: "0.2s" }}>
+            {[
+              { icon: Users, label: "African Creators", value: "10K+" },
+              { icon: Heart, label: "Daily Vibes", value: "50K+" },
+              { icon: Zap, label: "M-PESA Transactions", value: "1K+" },
+              { icon: Sparkles, label: "Communities", value: "500+" },
+            ].map((stat, index) => (
+              <div key={index} className="bg-card/60 backdrop-blur-md border border-border/60 rounded-2xl p-5 hover:border-primary/40 hover:scale-[1.03] transition-all duration-300">
+                <stat.icon className="h-6 w-6 text-primary mx-auto mb-2" />
+                <div className="text-2xl md:text-3xl font-bold text-foreground">{stat.value}</div>
+                <div className="text-xs md:text-sm text-muted-foreground">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
