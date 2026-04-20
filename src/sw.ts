@@ -4,6 +4,10 @@
 declare const self: any;
 declare function importScripts(...urls: string[]): void;
 
+// Workbox precache manifest injection point (required by vite-plugin-pwa injectManifest)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _precache = self.__WB_MANIFEST;
+
 
 // Firebase Cloud Messaging
 importScripts(
