@@ -1,11 +1,9 @@
 /// <reference lib="webworker" />
-import { precacheAndRoute } from "workbox-precaching";
 
-declare const self: ServiceWorkerGlobalScope & typeof globalThis;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare const self: any;
 declare function importScripts(...urls: string[]): void;
 
-// Workbox precache
-precacheAndRoute(self.__WB_MANIFEST);
 
 // Firebase Cloud Messaging
 importScripts(
