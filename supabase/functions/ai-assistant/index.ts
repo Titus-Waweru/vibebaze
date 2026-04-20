@@ -43,6 +43,29 @@ serve(async (req) => {
   }
 
   try {
+    // Enforce authentication - reject any request without a valid bearer token
+    const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
+    if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized. Please log in to use VibeBot." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const token = authHeader.slice(7).trim();
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    if (SUPABASE_URL && ANON_KEY) {
+      const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        headers: { Authorization: `Bearer ${token}`, apikey: ANON_KEY },
+      });
+      if (!userRes.ok) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized. Please log in to use VibeBot." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     const { messages } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
