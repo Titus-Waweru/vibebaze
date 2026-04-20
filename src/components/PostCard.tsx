@@ -133,14 +133,24 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
 
   const handleShare = async () => {
     const url = `${window.location.origin}/post/${post.id}`;
+    const title = `${post.profiles?.username || 'A creator'} on VibeBaze`;
+    const text = post.caption ? `${post.caption}\n\n` : `Check out this ${post.type} on VibeBaze! `;
     if (navigator.share) {
       try {
-        await navigator.share({ title: `Post by ${post.profiles?.username || 'User'}`, text: post.caption || 'Check out this post!', url });
+        await navigator.share({ title, text, url });
         return;
       } catch {}
     }
-    navigator.clipboard.writeText(url);
-    toast.success("Link copied to clipboard!");
+    // Desktop fallback: open WhatsApp/X share or copy
+    const encoded = encodeURIComponent(`${text}${url}`);
+    const wa = `https://wa.me/?text=${encoded}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied! Opening WhatsApp...", { duration: 2000 });
+    } catch {
+      toast.success("Opening WhatsApp share...");
+    }
+    window.open(wa, "_blank", "noopener,noreferrer");
   };
 
   const handleCopyLink = () => {
@@ -274,34 +284,34 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
 
         {/* Actions */}
         <div className="p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={handleLike} className={`hover:text-primary transition-colors ${isLiked ? "text-primary" : ""}`}>
-                <Heart className={`h-6 w-6 ${isLiked ? "fill-current" : ""}`} />
-                <span className="ml-1">{likesCount}</span>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-1 sm:gap-3 flex-wrap">
+              <Button variant="ghost" size="sm" onClick={handleLike} className={`px-2 min-h-[44px] hover:text-primary transition-colors ${isLiked ? "text-primary" : ""}`}>
+                <Heart className={`h-5 w-5 sm:h-6 sm:w-6 ${isLiked ? "fill-current" : ""}`} />
+                <span className="ml-1 text-sm">{likesCount}</span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setCommentSheetOpen(true)} className="hover:text-primary">
-                <MessageCircle className="h-6 w-6" />
-                <span className="ml-1">{commentsCount}</span>
+              <Button variant="ghost" size="sm" onClick={() => setCommentSheetOpen(true)} className="px-2 min-h-[44px] hover:text-primary">
+                <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6" />
+                <span className="ml-1 text-sm">{commentsCount}</span>
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleShare} className="hover:text-accent">
-                <Share2 className="h-6 w-6" />
+              <Button variant="ghost" size="sm" onClick={handleShare} className="px-2 min-h-[44px] hover:text-accent">
+                <Share2 className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
               {(post.type === "image" || post.type === "video") && post.media_url && (
-                <Button variant="ghost" size="sm" onClick={handleDownload} disabled={downloading} className="hover:text-primary">
-                  <Download className={`h-5 w-5 ${downloading ? "animate-bounce" : ""}`} />
+                <Button variant="ghost" size="sm" onClick={handleDownload} disabled={downloading} className="px-2 min-h-[44px] hover:text-primary">
+                  <Download className={`h-4 w-4 sm:h-5 sm:w-5 ${downloading ? "animate-bounce" : ""}`} />
                 </Button>
               )}
               {!isOwnPost && currentUserId && (
                 <TipButton creatorId={post.user_id} creatorUsername={post.profiles?.username || "user"} postId={post.id} onTip={(amount) => sendTip(post.user_id, amount, post.id)} />
               )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0 ml-auto">
               {isOwnPost && (
                 <DeletePostButton postId={post.id} mediaUrl={post.media_url} onDeleted={() => window.location.reload()} />
               )}
-              <Button variant="ghost" size="sm" onClick={handleSave} className={`hover:text-accent transition-colors ${isSaved ? "text-accent" : ""}`}>
-                <Bookmark className={`h-6 w-6 ${isSaved ? "fill-current" : ""}`} />
+              <Button variant="ghost" size="sm" onClick={handleSave} className={`px-2 min-h-[44px] hover:text-accent transition-colors ${isSaved ? "text-accent" : ""}`}>
+                <Bookmark className={`h-5 w-5 sm:h-6 sm:w-6 ${isSaved ? "fill-current" : ""}`} />
               </Button>
             </div>
           </div>
