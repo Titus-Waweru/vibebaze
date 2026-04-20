@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import { precacheAndRoute } from "workbox-precaching";
 
-declare const self: ServiceWorkerGlobalScope & typeof globalThis;
+declare const self: ServiceWorkerGlobalScope & typeof globalThis & { __WB_MANIFEST: Array<{ url: string; revision: string | null }> };
 declare function importScripts(...urls: string[]): void;
 
 // Workbox precache (required by vite-plugin-pwa injectManifest)
