@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Lock, Eye, EyeOff, CheckCircle2, Mail, ArrowLeft } from "lucide-react";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
+import AuthBackground from "@/components/AuthBackground";
 
 type PageMode = "request" | "reset" | "success";
 
@@ -120,8 +121,7 @@ const ResetPassword = () => {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
+      <AuthBackground />
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-primary/15 rounded-full blur-[120px] animate-float" />
       <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-accent/15 rounded-full blur-[100px] animate-float" style={{ animationDelay: "2s" }} />
 
