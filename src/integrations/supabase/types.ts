@@ -1344,7 +1344,54 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      my_referrals: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          points_awarded: number | null
+          referral_code: string | null
+          referred_id: string | null
+          referrer_id: string | null
+          status: string | null
+          validated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          points_awarded?: number | null
+          referral_code?: string | null
+          referred_id?: string | null
+          referrer_id?: string | null
+          status?: string | null
+          validated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          points_awarded?: number | null
+          referral_code?: string | null
+          referred_id?: string | null
+          referrer_id?: string | null
+          status?: string | null
+          validated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       check_earnings_unlocked: { Args: { p_user_id: string }; Returns: boolean }
@@ -1378,6 +1425,7 @@ export type Database = {
         Args: { p_user_one: string; p_user_two: string }
         Returns: string
       }
+      get_user_public_key: { Args: { p_user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
