@@ -114,7 +114,7 @@ const Landing = () => {
               { icon: Zap, label: "M-PESA Transactions", value: "1K+" },
               { icon: Sparkles, label: "Communities", value: "500+" },
             ].map((stat, index) => (
-              <div key={index} className="bg-card/60 backdrop-blur-md border border-border/60 rounded-2xl p-5 hover:border-primary/40 hover:scale-[1.03] transition-all duration-300">
+              <div key={index} className="bg-card/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 hover:border-primary/40 hover:bg-card/60 hover:scale-[1.03] hover:shadow-glow transition-all duration-300">
                 <stat.icon className="h-6 w-6 text-primary mx-auto mb-2" />
                 <div className="text-2xl md:text-3xl font-bold text-foreground">{stat.value}</div>
                 <div className="text-xs md:text-sm text-muted-foreground">{stat.label}</div>
