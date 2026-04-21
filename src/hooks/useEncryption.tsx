@@ -210,14 +210,12 @@ export const useEncryption = (userId: string | undefined) => {
   );
 
   const getRecipientPublicKey = async (recipientId: string): Promise<string | null> => {
-    const { data, error } = await supabase
-      .from("user_encryption_keys")
-      .select("public_key")
-      .eq("user_id", recipientId)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("get_user_public_key", {
+      p_user_id: recipientId,
+    });
 
     if (error || !data) return null;
-    return data.public_key;
+    return data as string;
   };
 
   return {
