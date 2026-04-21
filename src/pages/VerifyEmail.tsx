@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
 import { Mail, RefreshCw, CheckCircle2, Shield } from "lucide-react";
+import AuthBackground from "@/components/AuthBackground";
 
 const VerifyEmail = () => {
   const navigate = useNavigate();

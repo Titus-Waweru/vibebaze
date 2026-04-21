@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Lock, Eye, EyeOff, CheckCircle2, Mail, ArrowLeft } from "lucide-react";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
+import AuthBackground from "@/components/AuthBackground";
 
 type PageMode = "request" | "reset" | "success";
 

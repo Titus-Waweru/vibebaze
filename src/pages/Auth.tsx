@@ -13,6 +13,7 @@ import vibebazeLogo from "@/assets/vibebaze-logo.png";
 import { Gift, Eye, EyeOff } from "lucide-react";
 import { generateDeviceFingerprint } from "@/utils/deviceFingerprint";
 import SEO from "@/components/SEO";
+import AuthBackground from "@/components/AuthBackground";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
