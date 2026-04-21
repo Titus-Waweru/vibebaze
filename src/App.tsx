@@ -24,6 +24,7 @@ import Wallet from "./pages/Wallet";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import CreatorsSchool from "./pages/CreatorsSchool";
+import Favorites from "./pages/Favorites";
 import ResetPassword from "./pages/ResetPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import NotFound from "./pages/NotFound";
@@ -110,6 +111,7 @@ const AppRoutes = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/creators-school" element={<CreatorsSchool />} />
+        <Route path="/favorites" element={<Favorites />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>

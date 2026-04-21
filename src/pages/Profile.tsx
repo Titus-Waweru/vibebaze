@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
-import { Settings, LogOut, Loader2, GraduationCap, Wallet, Gift, Trash2, ExternalLink } from "lucide-react";
+import { Settings, LogOut, Loader2, GraduationCap, Wallet, Gift, Trash2, ExternalLink, Bookmark } from "lucide-react";
 import { signOut } from "@/lib/auth";
 import { toast } from "sonner";
 import FollowListModal from "@/components/FollowListModal";
@@ -165,7 +165,7 @@ const Profile = () => {
               </div>
 
               {/* Quick Actions */}
-              <div className="grid grid-cols-3 gap-3 w-full max-w-md">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-md">
                 <Button
                   variant="outline"
                   className="flex-1 bg-gradient-to-r from-purple-500/10 to-cyan-500/10 border-primary/30 hover:border-primary"
@@ -173,6 +173,14 @@ const Profile = () => {
                 >
                   <Wallet className="h-4 w-4 mr-2" />
                   Wallet
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 bg-gradient-to-r from-pink-500/10 to-rose-500/10 border-pink-500/30 hover:border-pink-500"
+                  onClick={() => navigate("/favorites")}
+                >
+                  <Bookmark className="h-4 w-4 mr-2" />
+                  Saved
                 </Button>
                 <Button
                   variant="outline"

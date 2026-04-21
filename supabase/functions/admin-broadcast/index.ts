@@ -166,7 +166,7 @@ function buildEmailHtml(title: string, body: string, messageType: string): strin
       </div>
     </div>
     <div style="padding:24px 40px;text-align:center;border-top:1px solid rgba(255,255,255,0.1);">
-      <p style="color:#666;font-size:12px;margin:0;">© 2025 VibeBaze. Built for African Creators. 🌍</p>
+      <p style="color:#666;font-size:12px;margin:0;">© ${new Date().getFullYear()} VibeBaze. Built for African Creators. 🌍</p>
       <p style="color:#666;font-size:11px;margin:8px 0 0;">You're receiving this because you're a registered VibeBaze user.</p>
     </div>
   </div>

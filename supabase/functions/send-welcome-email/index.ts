@@ -127,7 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
     <!-- Footer -->
     <div style="padding: 30px 40px; text-align: center; border-top: 1px solid rgba(255, 255, 255, 0.1);">
       <p style="color: #666666; font-size: 12px; margin: 0 0 8px;">
-        © 2024 VibeBaze. Built for African Creators. 🌍
+        © ${new Date().getFullYear()} VibeBaze. Built for African Creators. 🌍
       </p>
       <p style="color: #666666; font-size: 12px; margin: 0;">
         <a href="https://www.vibebaze.com/privacy" style="color: #888888; text-decoration: none;">Privacy</a> · 

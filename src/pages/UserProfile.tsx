@@ -28,15 +28,20 @@ const UserProfile = () => {
   });
 
   useEffect(() => {
+    // Guests cannot view profile pages — redirect to auth with return path
+    if (!authLoading && !user) {
+      navigate(`/auth?redirect=/user/${userId ?? ""}`, { replace: true });
+      return;
+    }
     if (user && userId === user.id) {
       navigate("/profile");
       return;
     }
-    if (userId) {
+    if (userId && user) {
       fetchProfile();
       fetchUserPosts();
     }
-  }, [userId, user]);
+  }, [userId, user, authLoading]);
 
   const fetchProfile = async () => {
     try {
