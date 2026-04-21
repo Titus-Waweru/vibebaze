@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Sparkles, Users, Heart, Zap, Download, Globe } from "lucide-react";
 import heroGradient from "@/assets/hero-gradient.jpg";
+import heroCreators from "@/assets/landing-hero-creators.jpg";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
 import { InstallBanner } from "@/components/InstallBanner";
 import { Footer } from "@/components/Footer";
@@ -15,15 +16,24 @@ const Landing = () => {
       <InstallBanner />
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center pt-12 pb-20">
-        {/* Background with gradient overlay */}
+        {/* Layered background: real creators photo + gradient mesh + dark overlays */}
         <div className="absolute inset-0 z-0">
-          <img src={heroGradient} alt="" aria-hidden className="w-full h-full object-cover opacity-30" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/85 to-background" />
+          <img
+            src={heroCreators}
+            alt=""
+            aria-hidden
+            className="w-full h-full object-cover opacity-40 scale-105 animate-[fade-in_1.2s_ease-out]"
+          />
+          <img src={heroGradient} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,hsl(var(--primary)/0.25),transparent_60%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,hsl(var(--accent)/0.2),transparent_55%)]" />
         </div>
 
-        {/* Floating orbs */}
-        <div className="absolute top-20 left-10 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-float" style={{ animationDelay: "1s" }} />
+        {/* Floating orbs for depth */}
+        <div className="absolute top-20 left-10 w-64 h-64 bg-primary/30 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/30 rounded-full blur-3xl animate-float" style={{ animationDelay: "1s" }} />
+        <div className="absolute top-1/2 left-1/3 w-80 h-80 bg-primary/15 rounded-full blur-3xl animate-float" style={{ animationDelay: "2s" }} />
 
         {/* Content */}
         <div className="relative z-10 container mx-auto px-4">
@@ -104,7 +114,7 @@ const Landing = () => {
               { icon: Zap, label: "M-PESA Transactions", value: "1K+" },
               { icon: Sparkles, label: "Communities", value: "500+" },
             ].map((stat, index) => (
-              <div key={index} className="bg-card/60 backdrop-blur-md border border-border/60 rounded-2xl p-5 hover:border-primary/40 hover:scale-[1.03] transition-all duration-300">
+              <div key={index} className="bg-card/40 backdrop-blur-xl border border-white/10 rounded-2xl p-5 hover:border-primary/40 hover:bg-card/60 hover:scale-[1.03] hover:shadow-glow transition-all duration-300">
                 <stat.icon className="h-6 w-6 text-primary mx-auto mb-2" />
                 <div className="text-2xl md:text-3xl font-bold text-foreground">{stat.value}</div>
                 <div className="text-xs md:text-sm text-muted-foreground">{stat.label}</div>

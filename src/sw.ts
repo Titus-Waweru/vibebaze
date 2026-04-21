@@ -55,17 +55,18 @@ messaging.onBackgroundMessage((payload: any) => {
 
 // Fallback: handle raw push events not caught by Firebase SDK
 self.addEventListener("push", (event) => {
-  // Firebase SDK handles its own messages; this catches any raw pushes
   if (!event.data) return;
   try {
     const payload = event.data.json();
-    // Skip if Firebase SDK already handled this (it sets notification field)
-    if (payload.notification) return;
-    
-    const title = payload.data?.title || "VibeBaze";
-    const body = payload.data?.body || "You have a new notification";
-    const tag = payload.data?.tag ? `${payload.data.tag}-${Date.now()}` : `vibebaze-push-${Date.now()}`;
-    
+    // Always show a notification — guarantees delivery when app is closed,
+    // even if Firebase SDK background handler didn't fire. The `tag` dedupes
+    // so Firebase + this handler won't show duplicates.
+    const notif = payload.notification || payload.data || {};
+    const title = notif.title || payload.data?.title || "VibeBaze";
+    const body = notif.body || payload.data?.body || "You have a new notification";
+    const baseTag = payload.data?.tag || "vibebaze-push";
+    const tag = `${baseTag}-${Date.now()}`;
+
     event.waitUntil(
       self.registration.showNotification(title, {
         body,
@@ -73,6 +74,8 @@ self.addEventListener("push", (event) => {
         badge: "/pwa-192x192.png",
         tag,
         requireInteraction: true,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ...( { vibrate: [200, 100, 200] } as any ),
         data: payload.data || {},
       } as NotificationOptions)
     );

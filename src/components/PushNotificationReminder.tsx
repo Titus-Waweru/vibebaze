@@ -11,13 +11,26 @@ const PushNotificationReminder = ({ userName }: PushNotificationReminderProps) =
   const { isSupported, isEnabled, isLoading, enableNotifications } = usePushNotifications();
   const [dismissed, setDismissed] = useState(false);
   const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     const hasSeenReminder = localStorage.getItem("vb_push_reminder_seen");
     setIsFirstLogin(!hasSeenReminder);
   }, []);
 
-  if (dismissed || !isSupported || isEnabled || isLoading) return null;
+  // Smart trigger: only show if permission is "default" (never asked).
+  // Skip entirely if "granted" (already on) or "denied" (don't spam).
+  // Delay 8s after mount so it doesn't pop instantly.
+  useEffect(() => {
+    if (!isSupported || isEnabled || isLoading) return;
+    if (typeof Notification === "undefined") return;
+    if (Notification.permission !== "default") return;
+    const t = setTimeout(() => setVisible(true), 8000);
+    return () => clearTimeout(t);
+  }, [isSupported, isEnabled, isLoading]);
+
+  if (dismissed || !visible || !isSupported || isEnabled || isLoading) return null;
+  if (typeof Notification !== "undefined" && Notification.permission !== "default") return null;
 
   const displayName = userName || "there";
   const message = isFirstLogin
