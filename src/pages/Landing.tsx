@@ -17,15 +17,15 @@ const Landing = () => {
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center pt-12 pb-20">
         {/* Layered background: real creators photo + gradient mesh + dark overlays */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 overflow-hidden">
           <img
             src={heroCreators}
             alt=""
             aria-hidden
-            className="w-full h-full object-cover opacity-40 scale-105 animate-[fade-in_1.2s_ease-out]"
+            className="w-full h-full object-cover object-center opacity-50 sm:opacity-40 scale-110 sm:scale-105 animate-[fade-in_1.2s_ease-out]"
           />
           <img src={heroGradient} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-50" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background sm:from-background/60 sm:via-background/80" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,hsl(var(--primary)/0.25),transparent_60%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,hsl(var(--accent)/0.2),transparent_55%)]" />
         </div>
