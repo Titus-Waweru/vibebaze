@@ -175,6 +175,11 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
   };
 
   const handleProfileClick = () => {
+    if (!currentUserId) {
+      toast.info("Sign in to view profiles");
+      navigate(`/auth?redirect=/user/${post.user_id}`);
+      return;
+    }
     if (post.user_id === currentUserId) navigate("/profile");
     else navigate(`/user/${post.user_id}`);
   };
