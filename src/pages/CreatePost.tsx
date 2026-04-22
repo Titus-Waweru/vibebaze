@@ -141,6 +141,70 @@ const CreatePost = () => {
     }
   };
 
+  // Capture a thumbnail frame from a video file and upload it as JPG
+  const generateAndUploadVideoThumbnail = async (videoFile: File): Promise<string | null> => {
+    try {
+      const blob = await new Promise<Blob | null>((resolve, reject) => {
+        const video = document.createElement("video");
+        video.preload = "metadata";
+        video.muted = true;
+        video.playsInline = true;
+        video.crossOrigin = "anonymous";
+        const objectUrl = URL.createObjectURL(videoFile);
+        video.src = objectUrl;
+
+        const cleanup = () => URL.revokeObjectURL(objectUrl);
+
+        video.onloadedmetadata = () => {
+          // Seek to 1s (or 10% if shorter) for a representative frame
+          const seekTo = Math.min(1, Math.max(0.1, video.duration * 0.1));
+          video.currentTime = seekTo;
+        };
+        video.onseeked = () => {
+          try {
+            const canvas = document.createElement("canvas");
+            canvas.width = video.videoWidth || 720;
+            canvas.height = video.videoHeight || 1280;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              cleanup();
+              return resolve(null);
+            }
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob(
+              (b) => {
+                cleanup();
+                resolve(b);
+              },
+              "image/jpeg",
+              0.85
+            );
+          } catch (err) {
+            cleanup();
+            reject(err);
+          }
+        };
+        video.onerror = () => {
+          cleanup();
+          resolve(null);
+        };
+      });
+
+      if (!blob) return null;
+
+      const thumbName = `${user?.id}/thumb_${Date.now()}.jpg`;
+      const { error } = await supabase.storage
+        .from("media")
+        .upload(thumbName, blob, { contentType: "image/jpeg" });
+      if (error) throw error;
+      const { data } = supabase.storage.from("media").getPublicUrl(thumbName);
+      return data.publicUrl;
+    } catch (err) {
+      console.warn("Thumbnail generation failed:", err);
+      return null;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
