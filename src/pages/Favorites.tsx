@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import PostCard from "@/components/PostCard";
 import SEO from "@/components/SEO";
-import { Bookmark, Loader2, Sparkles } from "lucide-react";
+import { Bookmark, Loader2, Sparkles, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Favorites = () => {
@@ -13,6 +13,7 @@ const Favorites = () => {
   const navigate = useNavigate();
   const [posts, setPosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -26,6 +27,7 @@ const Favorites = () => {
 
   const fetchFavorites = async () => {
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from("saved_posts")
@@ -34,11 +36,12 @@ const Favorites = () => {
         .order("created_at", { ascending: false });
       if (error) throw error;
       const mapped = (data || [])
-        .map((row: any) => row.posts)
-        .filter(Boolean);
+        .map((row: any) => row?.posts)
+        .filter((p: any) => p && p.id);
       setPosts(mapped);
     } catch (err) {
       console.error("Error fetching favorites:", err);
+      setError("We couldn't load your saved posts. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -66,10 +69,17 @@ const Favorites = () => {
           <div className="flex justify-center py-20">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
+        ) : error ? (
+          <div className="text-center py-20 px-6 rounded-2xl border border-destructive/40 bg-card/40 backdrop-blur-sm">
+            <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />
+            <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
+            <p className="text-sm text-muted-foreground mb-6">{error}</p>
+            <Button onClick={fetchFavorites} variant="outline">Try again</Button>
+          </div>
         ) : posts.length === 0 ? (
           <div className="text-center py-20 px-6 rounded-2xl border border-border/50 bg-card/40 backdrop-blur-sm">
             <Sparkles className="h-12 w-12 mx-auto mb-4 text-primary/60" />
-            <h2 className="text-lg font-semibold mb-2">No saved posts yet</h2>
+            <h2 className="text-lg font-semibold mb-2">You haven't saved anything yet</h2>
             <p className="text-sm text-muted-foreground mb-6">
               Tap the bookmark icon on any post to save it here.
             </p>
@@ -80,7 +90,7 @@ const Favorites = () => {
         ) : (
           <div className="space-y-6">
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} currentUserId={user.id} />
+              <PostCard key={post.id} post={post} currentUserId={user!.id} />
             ))}
           </div>
         )}

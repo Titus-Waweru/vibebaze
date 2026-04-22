@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,23 +58,24 @@ const AdminPanel = () => {
     );
   }
 
-  if (!user || !isAdmin) {
+  // Unauthenticated users → bounce to login, do NOT reveal any admin UI
+  if (!user) {
+    return <Navigate to="/auth?redirect=/admin" replace />;
+  }
+
+  // Authenticated but not admin → minimal 403, NO navbar, NO layout hints
+  if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
-        <Navbar />
-        <div className="container mx-auto px-4 pt-6 max-w-xl">
-          <Card className="border-destructive/50">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-4">
-                <Shield className="h-12 w-12 text-destructive mx-auto" />
-                <h2 className="text-xl font-bold text-foreground">Access Denied</h2>
-                <p className="text-muted-foreground">
-                  You don't have permission to access the admin panel.
-                </p>
-                <Button onClick={() => navigate("/feed")}>Go to Feed</Button>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="text-center space-y-4 max-w-sm">
+          <Shield className="h-10 w-10 text-destructive mx-auto" />
+          <h1 className="text-xl font-semibold text-foreground">403 — Access Denied</h1>
+          <p className="text-sm text-muted-foreground">
+            You don't have permission to view this page.
+          </p>
+          <Button onClick={() => navigate("/feed")} variant="outline" size="sm">
+            Return home
+          </Button>
         </div>
       </div>
     );

@@ -4,6 +4,7 @@ import { Sparkles, Users, Heart, Zap, Download, Globe } from "lucide-react";
 import heroGradient from "@/assets/hero-gradient.jpg";
 import heroCreators from "@/assets/landing-hero-creators.jpg";
 import vibebazeLogo from "@/assets/vibebaze-logo.png";
+import appMockup from "@/assets/landing-app-mockup.jpg";
 import { InstallBanner } from "@/components/InstallBanner";
 import { Footer } from "@/components/Footer";
 import SEO from "@/components/SEO";
@@ -77,32 +78,22 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* Right: realistic phone/feed mockup */}
+            {/* Right: realistic phone/feed mockup using actual app screenshot */}
             <div className="relative hidden lg:block animate-slide-up">
-              <div className="relative mx-auto w-[320px] aspect-[9/19] rounded-[2.5rem] bg-gradient-to-br from-card to-card/40 border border-border/60 shadow-2xl overflow-hidden backdrop-blur-xl">
-                <div className="absolute top-0 inset-x-0 h-7 bg-background/60 flex items-center justify-center">
-                  <div className="w-20 h-5 rounded-b-2xl bg-background/80" />
-                </div>
-                <div className="pt-10 px-4 space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="bg-background/70 backdrop-blur rounded-2xl p-3 border border-border/40">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="h-8 w-8 rounded-full bg-gradient-primary" />
-                        <div className="flex-1">
-                          <div className="h-2.5 w-20 bg-foreground/20 rounded" />
-                          <div className="h-2 w-12 bg-foreground/10 rounded mt-1" />
-                        </div>
-                      </div>
-                      <div className="aspect-video rounded-xl bg-gradient-to-br from-primary/30 via-accent/20 to-primary/10" />
-                      <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                        <Heart className="h-3.5 w-3.5 text-primary" /> <span>{i * 1234}</span>
-                        <Zap className="h-3.5 w-3.5 text-accent" /> <span>KSh {i * 50}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div className="relative mx-auto w-[340px] drop-shadow-2xl">
+                <img
+                  src={appMockup}
+                  alt="VibeBaze app feed showing African creators sharing videos and earning tips on M-PESA"
+                  width={768}
+                  height={1376}
+                  loading="lazy"
+                  className="w-full h-auto rounded-[2.5rem] border border-border/40"
+                />
+                <div className="pointer-events-none absolute -inset-6 -z-10 bg-gradient-primary opacity-25 blur-3xl rounded-full" />
               </div>
-              <div className="absolute -z-10 inset-0 bg-gradient-primary opacity-20 blur-3xl rounded-full" />
+              <p className="text-center text-xs text-muted-foreground mt-4 italic">
+                VibeBaze — where creators grow ✨
+              </p>
             </div>
           </div>
 
