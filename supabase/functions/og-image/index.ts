@@ -40,7 +40,13 @@ Deno.serve(async (req) => {
       ? `${username}: ${post.caption.slice(0, 60)}${post.caption.length > 60 ? "..." : ""}`
       : `${username} on VibeBaze`;
     const description = post.caption || `Check out this ${post.type} by ${username} on VibeBaze — Africa's creator platform.`;
-    const image = post.thumbnail_url || post.media_url || `${supabaseUrl}/storage/v1/object/public/media/social-preview.png`;
+    // For videos, never use media_url (it's a .mp4 — not a valid social preview).
+    // Fallback to site preview if no thumbnail is available.
+    const SITE_PREVIEW = "https://www.vibebaze.com/social-preview.png";
+    const image =
+      post.thumbnail_url ||
+      (post.type === "image" ? post.media_url : null) ||
+      SITE_PREVIEW;
     const postUrl = `https://vibebaze.lovable.app/post/${post.id}`;
 
     const html = `<!DOCTYPE html>

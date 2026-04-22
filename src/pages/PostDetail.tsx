@@ -115,7 +115,11 @@ const PostDetail = () => {
         title={post ? `${post.profiles?.username || "Creator"}: ${(post.caption || "").slice(0, 50)} | VibeBaze` : "Post | VibeBaze"}
         description={post?.caption || "Watch this on VibeBaze — Africa's creator platform."}
         path={`/post/${postId}`}
-        image={post?.thumbnail_url || post?.media_url || undefined}
+        image={
+          post?.thumbnail_url ||
+          (post?.type === "image" ? post?.media_url : undefined) ||
+          undefined
+        }
       />
       <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
         <Navbar />
