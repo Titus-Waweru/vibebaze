@@ -227,8 +227,15 @@ const CreatePost = () => {
 
     try {
       let mediaUrl = null;
+      let thumbnailUrl: string | null = null;
       if (file) {
         mediaUrl = await uploadFile(file);
+        // Auto-generate thumbnail for videos so shares (OG previews) display correctly
+        if (postType === "video") {
+          thumbnailUrl = await generateAndUploadVideoThumbnail(file);
+        } else if (postType === "image") {
+          thumbnailUrl = mediaUrl;
+        }
       }
 
       const { error } = await supabase.from("posts").insert({
@@ -236,6 +243,7 @@ const CreatePost = () => {
         type: postType,
         caption: caption || null,
         media_url: mediaUrl,
+        thumbnail_url: thumbnailUrl,
         is_private: false,
         hashtags: selectedHashtags.length > 0 ? selectedHashtags : null,
       });
