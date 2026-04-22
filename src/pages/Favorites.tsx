@@ -7,6 +7,7 @@ import PostCard from "@/components/PostCard";
 import SEO from "@/components/SEO";
 import { Bookmark, Loader2, Sparkles, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { VideoPlaybackProvider } from "@/contexts/VideoPlaybackContext";
 
 const Favorites = () => {
   const { user, loading: authLoading } = useAuth();
@@ -88,11 +89,13 @@ const Favorites = () => {
             </Button>
           </div>
         ) : (
-          <div className="space-y-6">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} currentUserId={user!.id} />
-            ))}
-          </div>
+          <VideoPlaybackProvider>
+            <div className="space-y-6">
+              {posts.map((post) => (
+                <PostCard key={post.id} post={post} currentUserId={user!.id} />
+              ))}
+            </div>
+          </VideoPlaybackProvider>
         )}
       </div>
     </div>
