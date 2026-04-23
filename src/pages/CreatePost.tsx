@@ -348,6 +348,19 @@ const CreatePost = () => {
                       <Progress value={uploadProgress} className="h-2" />
                     </div>
                   )}
+
+                  {/* Add Text overlay button (image/video only) */}
+                  {file && (postType === "image" || postType === "video") && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full gap-2"
+                      onClick={() => setShowTextEditor(true)}
+                    >
+                      <Type className="h-4 w-4" />
+                      {hasTextOverlay ? "Edit text overlay" : "Add text to media"}
+                    </Button>
+                  )}
                 </div>
               )}
 
