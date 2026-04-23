@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Bell, Send, Loader2, CheckCircle2, AlertCircle, Users, Shield, Mail, Smartphone } from "lucide-react";
+import { Bell, Send, Loader2, CheckCircle2, AlertCircle, Users, Shield, Mail, Smartphone, Clock, Activity } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -22,10 +24,25 @@ const messageTypeOptions: { value: MessageType; label: string; emoji: string; de
   { value: "maintenance", label: "Maintenance", emoji: "🔧", description: "Scheduled maintenance notices" },
 ];
 
-interface BroadcastResult {
-  success: boolean;
-  email: { sent: number; failed: number; total: number };
-  push: { sent: number; failed: number; total: number; tokensRemoved: number };
+interface BroadcastJob {
+  id: string;
+  title: string;
+  body: string;
+  message_type: string;
+  channel: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  total_users: number;
+  total_subscriptions: number;
+  email_sent: number;
+  email_failed: number;
+  push_sent: number;
+  push_failed: number;
+  tokens_removed: number;
+  email_done: boolean;
+  push_done: boolean;
+  last_error: string | null;
+  created_at: string;
+  completed_at: string | null;
 }
 
 const AdminMessagingTab = () => {
@@ -34,7 +51,25 @@ const AdminMessagingTab = () => {
   const [messageType, setMessageType] = useState<MessageType>("update");
   const [channel, setChannel] = useState<DeliveryChannel>("both");
   const [sending, setSending] = useState(false);
-  const [lastResult, setLastResult] = useState<BroadcastResult | null>(null);
+  const [jobs, setJobs] = useState<BroadcastJob[]>([]);
+
+  const fetchJobs = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("broadcast_jobs")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    if (!error && data) setJobs(data as BroadcastJob[]);
+  }, []);
+
+  useEffect(() => {
+    fetchJobs();
+    // Poll every 3s while any job is active
+    const interval = setInterval(() => {
+      fetchJobs();
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [fetchJobs]);
 
   const handleBroadcast = async () => {
     if (!title.trim() || !body.trim()) {
@@ -43,7 +78,6 @@ const AdminMessagingTab = () => {
     }
 
     setSending(true);
-    setLastResult(null);
 
     try {
       const { data, error } = await supabase.functions.invoke("admin-broadcast", {
@@ -57,24 +91,36 @@ const AdminMessagingTab = () => {
 
       if (error) throw error;
 
-      const result = data as BroadcastResult;
-      setLastResult(result);
-
-      const totalSent = (result.email?.sent || 0) + (result.push?.sent || 0);
-      if (totalSent > 0) {
-        toast.success(`Broadcast sent! ${result.email?.sent || 0} emails, ${result.push?.sent || 0} push notifications`);
+      if (data?.jobId) {
+        toast.success("Broadcast queued — processing in background");
         setTitle("");
         setBody("");
+        fetchJobs();
       } else {
-        toast.info("No users received the broadcast");
+        toast.error(data?.error || "Failed to queue broadcast");
       }
     } catch (error) {
-      console.error("Error sending broadcast:", error);
-      toast.error("Failed to send broadcast");
-      setLastResult(null);
+      console.error("Error queuing broadcast:", error);
+      toast.error("Failed to queue broadcast");
     } finally {
       setSending(false);
     }
+  };
+
+  const statusBadge = (status: BroadcastJob["status"]) => {
+    const map: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; icon: React.ReactNode; label: string }> = {
+      pending: { variant: "outline", icon: <Clock className="h-3 w-3" />, label: "Pending" },
+      processing: { variant: "secondary", icon: <Activity className="h-3 w-3 animate-pulse" />, label: "Processing" },
+      completed: { variant: "default", icon: <CheckCircle2 className="h-3 w-3" />, label: "Completed" },
+      failed: { variant: "destructive", icon: <AlertCircle className="h-3 w-3" />, label: "Failed" },
+    };
+    const cfg = map[status] || map.pending;
+    return (
+      <Badge variant={cfg.variant} className="gap-1">
+        {cfg.icon}
+        {cfg.label}
+      </Badge>
+    );
   };
 
   return (
@@ -87,7 +133,7 @@ const AdminMessagingTab = () => {
             Admin Broadcast
           </CardTitle>
           <CardDescription>
-            Send an email + push notification to all registered users simultaneously
+            Queue an email + push notification broadcast — processed in background batches for resilience
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -169,52 +215,84 @@ const AdminMessagingTab = () => {
             className="w-full gap-2"
           >
             {sending ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Broadcasting...</>
+              <><Loader2 className="h-4 w-4 animate-spin" /> Queuing...</>
             ) : (
-              <><Send className="h-4 w-4" /> Broadcast to All Users</>
+              <><Send className="h-4 w-4" /> Queue Broadcast</>
             )}
           </Button>
+        </CardContent>
+      </Card>
 
-          {/* Last Result */}
-          {lastResult && (
-            <Alert variant={(lastResult.email?.sent || 0) + (lastResult.push?.sent || 0) > 0 ? "default" : "destructive"}>
-              {(lastResult.email?.sent || 0) + (lastResult.push?.sent || 0) > 0 ? (
-                <CheckCircle2 className="h-4 w-4" />
-              ) : (
-                <AlertCircle className="h-4 w-4" />
-              )}
-              <AlertTitle>Broadcast Results</AlertTitle>
-              <AlertDescription>
-                <div className="grid grid-cols-2 gap-4 mt-3">
-                  {/* Email results */}
-                  <div className="space-y-1">
-                    <p className="font-medium flex items-center gap-1 text-sm"><Mail className="h-3.5 w-3.5" /> Email</p>
-                    <div className="text-xs space-y-0.5">
-                      <div className="flex items-center gap-1"><Users className="h-3 w-3" /> {lastResult.email?.total || 0} recipients</div>
-                      <div className="text-primary">✓ {lastResult.email?.sent || 0} sent</div>
-                      {(lastResult.email?.failed || 0) > 0 && (
-                        <div className="text-destructive">✗ {lastResult.email.failed} failed</div>
-                      )}
-                    </div>
-                  </div>
-                  {/* Push results */}
-                  <div className="space-y-1">
-                    <p className="font-medium flex items-center gap-1 text-sm"><Smartphone className="h-3.5 w-3.5" /> Push</p>
-                    <div className="text-xs space-y-0.5">
-                      <div className="flex items-center gap-1"><Users className="h-3 w-3" /> {lastResult.push?.total || 0} subscribers</div>
-                      <div className="text-primary">✓ {lastResult.push?.sent || 0} sent</div>
-                      {(lastResult.push?.failed || 0) > 0 && (
-                        <div className="text-destructive">✗ {lastResult.push.failed} failed</div>
-                      )}
-                      {(lastResult.push?.tokensRemoved || 0) > 0 && (
-                        <div className="text-muted-foreground">🗑️ {lastResult.push.tokensRemoved} stale tokens removed</div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </AlertDescription>
-            </Alert>
+      {/* Job History */}
+      <Card className="border-border/50 shadow-card">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            Recent Broadcast Jobs
+          </CardTitle>
+          <CardDescription>Live progress — auto-refreshes every 3 seconds</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {jobs.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-6">No broadcasts yet</p>
           )}
+          {jobs.map((job) => {
+            const emailTotal = job.email_sent + job.email_failed;
+            const pushTotal = job.push_sent + job.push_failed;
+            const emailPct = job.total_users > 0 ? Math.min(100, Math.round((emailTotal / job.total_users) * 100)) : (job.email_done ? 100 : 0);
+            const pushPct = job.total_subscriptions > 0 ? Math.min(100, Math.round((pushTotal / job.total_subscriptions) * 100)) : (job.push_done ? 100 : 0);
+            const includeEmail = job.channel === "both" || job.channel === "email";
+            const includePush = job.channel === "both" || job.channel === "push";
+
+            return (
+              <div key={job.id} className="border border-border/50 rounded-lg p-3 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{job.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(job.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  {statusBadge(job.status)}
+                </div>
+
+                {includeEmail && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Mail className="h-3 w-3" /> Email
+                      </span>
+                      <span className="text-muted-foreground">
+                        {emailTotal} {job.total_users > 0 ? `/ ${job.total_users}` : ""}
+                        {job.email_failed > 0 && <span className="text-destructive ml-1">({job.email_failed} failed)</span>}
+                      </span>
+                    </div>
+                    <Progress value={emailPct} className="h-1.5" />
+                  </div>
+                )}
+
+                {includePush && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Smartphone className="h-3 w-3" /> Push
+                      </span>
+                      <span className="text-muted-foreground">
+                        {pushTotal} {job.total_subscriptions > 0 ? `/ ${job.total_subscriptions}` : ""}
+                        {job.push_failed > 0 && <span className="text-destructive ml-1">({job.push_failed} failed)</span>}
+                        {job.tokens_removed > 0 && <span className="ml-1">🗑️ {job.tokens_removed}</span>}
+                      </span>
+                    </div>
+                    <Progress value={pushPct} className="h-1.5" />
+                  </div>
+                )}
+
+                {job.last_error && (
+                  <p className="text-xs text-destructive truncate">⚠️ {job.last_error}</p>
+                )}
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 
@@ -230,14 +308,15 @@ const AdminMessagingTab = () => {
         <CardContent>
           <Alert>
             <CheckCircle2 className="h-4 w-4 text-primary" />
-            <AlertTitle>System Ready</AlertTitle>
+            <AlertTitle>Background Job System Active</AlertTitle>
             <AlertDescription className="space-y-2">
               <ul className="list-disc list-inside space-y-1 mt-2 text-sm text-muted-foreground">
-                <li><strong>Email:</strong> Resend API via updates@vibebaze.com</li>
-                <li><strong>Push:</strong> Firebase Cloud Messaging V1 (Service Account OAuth2)</li>
-                <li><strong>Delivery:</strong> Email + Push sent in parallel for instant reach</li>
-                <li><strong>Audit:</strong> Every broadcast logged to admin_logs</li>
-                <li><strong>Security:</strong> Admin role required, server-side verification</li>
+                <li><strong>Architecture:</strong> Cursor-paginated background worker</li>
+                <li><strong>Email batches:</strong> 50 per cycle via Resend (updates@vibebaze.com)</li>
+                <li><strong>Push batches:</strong> 100 per cycle via FCM V1</li>
+                <li><strong>Resilience:</strong> Self-invoking worker + pg_cron safety net (every minute)</li>
+                <li><strong>Fault tolerance:</strong> Per-message try/catch, failed sends don't halt the job</li>
+                <li><strong>Audit:</strong> Every job + completion logged to admin_logs</li>
               </ul>
             </AlertDescription>
           </Alert>
