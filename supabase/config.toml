@@ -12,5 +12,8 @@ verify_jwt = false
 [functions.admin-broadcast]
 verify_jwt = false
 
+[functions.process-broadcast-jobs]
+verify_jwt = false
+
 [functions.ai-assistant]
 verify_jwt = true
