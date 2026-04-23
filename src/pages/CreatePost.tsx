@@ -59,6 +59,11 @@ const CreatePost = () => {
     }
   }, [file]);
 
+  // Reset overlay state when file is removed/replaced
+  useEffect(() => {
+    if (!file) setHasTextOverlay(false);
+  }, [file]);
+
   const validateVideoDuration = (file: File): Promise<boolean> => {
     return new Promise((resolve) => {
       const video = document.createElement("video");
