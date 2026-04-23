@@ -53,6 +53,87 @@ export type Database = {
         }
         Relationships: []
       }
+      broadcast_jobs: {
+        Row: {
+          admin_id: string
+          body: string
+          channel: string
+          completed_at: string | null
+          created_at: string
+          email_cursor: string | null
+          email_done: boolean
+          email_failed: number
+          email_sent: number
+          id: string
+          last_error: string | null
+          message_type: string
+          push_cursor: string | null
+          push_done: boolean
+          push_failed: number
+          push_sent: number
+          started_at: string | null
+          status: string
+          title: string
+          tokens_removed: number
+          total_subscriptions: number
+          total_users: number
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          admin_id: string
+          body: string
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          email_cursor?: string | null
+          email_done?: boolean
+          email_failed?: number
+          email_sent?: number
+          id?: string
+          last_error?: string | null
+          message_type?: string
+          push_cursor?: string | null
+          push_done?: boolean
+          push_failed?: number
+          push_sent?: number
+          started_at?: string | null
+          status?: string
+          title: string
+          tokens_removed?: number
+          total_subscriptions?: number
+          total_users?: number
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          admin_id?: string
+          body?: string
+          channel?: string
+          completed_at?: string | null
+          created_at?: string
+          email_cursor?: string | null
+          email_done?: boolean
+          email_failed?: number
+          email_sent?: number
+          id?: string
+          last_error?: string | null
+          message_type?: string
+          push_cursor?: string | null
+          push_done?: boolean
+          push_failed?: number
+          push_sent?: number
+          started_at?: string | null
+          status?: string
+          title?: string
+          tokens_removed?: number
+          total_subscriptions?: number
+          total_users?: number
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
       comment_likes: {
         Row: {
           comment_id: string
