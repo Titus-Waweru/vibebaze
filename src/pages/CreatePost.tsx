@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import HashtagSuggestions from "@/components/HashtagSuggestions";
-import { Image, Video, Music, FileText, Upload, X, Eye } from "lucide-react";
+import { Image, Video, Music, FileText, Upload, X, Eye, Type } from "lucide-react";
+import MediaTextEditor from "@/components/editor/MediaTextEditor";
 
 const MAX_VIDEO_DURATION_SECONDS = 8 * 60; // 8 minutes
 
@@ -30,6 +31,8 @@ const CreatePost = () => {
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [showTextEditor, setShowTextEditor] = useState(false);
+  const [hasTextOverlay, setHasTextOverlay] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -54,6 +57,11 @@ const CreatePost = () => {
     } else {
       setFilePreviewUrl(null);
     }
+  }, [file]);
+
+  // Reset overlay state when file is removed/replaced
+  useEffect(() => {
+    if (!file) setHasTextOverlay(false);
   }, [file]);
 
   const validateVideoDuration = (file: File): Promise<boolean> => {
@@ -345,6 +353,19 @@ const CreatePost = () => {
                       <Progress value={uploadProgress} className="h-2" />
                     </div>
                   )}
+
+                  {/* Add Text overlay button (image/video only) */}
+                  {file && (postType === "image" || postType === "video") && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full gap-2"
+                      onClick={() => setShowTextEditor(true)}
+                    >
+                      <Type className="h-4 w-4" />
+                      {hasTextOverlay ? "Edit text overlay" : "Add text to media"}
+                    </Button>
+                  )}
                 </div>
               )}
 
@@ -449,6 +470,21 @@ const CreatePost = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Full-screen text editor */}
+      {showTextEditor && file && (postType === "image" || postType === "video") && (
+        <MediaTextEditor
+          file={file}
+          mediaType={postType}
+          onCancel={() => setShowTextEditor(false)}
+          onDone={(newFile) => {
+            setFile(newFile);
+            setHasTextOverlay(true);
+            setShowTextEditor(false);
+            toast.success("Text added to media");
+          }}
+        />
+      )}
     </div>
   );
 };
