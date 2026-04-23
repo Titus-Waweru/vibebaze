@@ -470,6 +470,21 @@ const CreatePost = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Full-screen text editor */}
+      {showTextEditor && file && (postType === "image" || postType === "video") && (
+        <MediaTextEditor
+          file={file}
+          mediaType={postType}
+          onCancel={() => setShowTextEditor(false)}
+          onDone={(newFile) => {
+            setFile(newFile);
+            setHasTextOverlay(true);
+            setShowTextEditor(false);
+            toast.success("Text added to media");
+          }}
+        />
+      )}
     </div>
   );
 };
