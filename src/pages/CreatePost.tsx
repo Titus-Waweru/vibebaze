@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import HashtagSuggestions from "@/components/HashtagSuggestions";
-import { Image, Video, Music, FileText, Upload, X, Eye } from "lucide-react";
+import { Image, Video, Music, FileText, Upload, X, Eye, Type } from "lucide-react";
+import MediaTextEditor from "@/components/editor/MediaTextEditor";
 
 const MAX_VIDEO_DURATION_SECONDS = 8 * 60; // 8 minutes
 
@@ -30,6 +31,8 @@ const CreatePost = () => {
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [profile, setProfile] = useState<any>(null);
+  const [showTextEditor, setShowTextEditor] = useState(false);
+  const [hasTextOverlay, setHasTextOverlay] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
