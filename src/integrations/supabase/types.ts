@@ -63,6 +63,8 @@ export type Database = {
           email_cursor: string | null
           email_done: boolean
           email_failed: number
+          email_provider_rejected: number
+          email_rate_limited: number
           email_sent: number
           id: string
           last_error: string | null
@@ -89,6 +91,8 @@ export type Database = {
           email_cursor?: string | null
           email_done?: boolean
           email_failed?: number
+          email_provider_rejected?: number
+          email_rate_limited?: number
           email_sent?: number
           id?: string
           last_error?: string | null
@@ -115,6 +119,8 @@ export type Database = {
           email_cursor?: string | null
           email_done?: boolean
           email_failed?: number
+          email_provider_rejected?: number
+          email_rate_limited?: number
           email_sent?: number
           id?: string
           last_error?: string | null

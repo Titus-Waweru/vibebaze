@@ -9,6 +9,9 @@ const corsHeaders = {
 };
 
 const EMAIL_BATCH = 50;
+const EMAIL_SUBBATCH = 5;          // Resend: max 5 requests/second
+const EMAIL_SUBBATCH_DELAY_MS = 1100; // >1s to stay under provider limit
+const EMAIL_MAX_RETRIES = 3;
 const PUSH_BATCH = 100;
 const BATCH_DELAY_MS = 300;
 
@@ -262,33 +265,65 @@ serve(async (req) => {
           const totalBatches = Math.ceil(totalTargets / EMAIL_BATCH);
           console.log(`[job ${job.id}] EMAIL: sending batch ${batchNum}/${totalBatches} (${batch.length} recipients)`);
 
-          const results = await Promise.allSettled(
-            batch.map((email) =>
-              resend.emails.send({
-                from: "VibeBaze <no-reply@vibebaze.com>",
-                to: [email],
-                subject: `${subjectPrefix} ${job.title}`,
-                html,
-              })
-            ),
-          );
-
-          let sent = 0, failed = 0;
-          const errors: string[] = [];
-          for (let i = 0; i < results.length; i++) {
-            const r = results[i];
-            if (r.status === "fulfilled") {
-              const payload = r.value as { data?: unknown; error?: { message?: string } | null };
-              if (payload?.error) {
-                failed++;
-                errors.push(`${batch[i]}: ${payload.error.message ?? "unknown"}`);
-              } else {
-                sent++;
+          const sendOne = async (email: string): Promise<
+            { ok: true } | { ok: false; rateLimited: boolean; message: string }
+          > => {
+            let attempt = 0;
+            let delay = 1000;
+            while (true) {
+              try {
+                const payload = await resend.emails.send({
+                  from: "VibeBaze <no-reply@vibebaze.com>",
+                  to: [email],
+                  subject: `${subjectPrefix} ${job.title}`,
+                  html,
+                }) as { data?: unknown; error?: { message?: string; statusCode?: number; name?: string } | null };
+                if (!payload?.error) return { ok: true };
+                const msg = payload.error.message ?? "unknown";
+                const rateLimited = /too many requests|rate.?limit|429/i.test(msg) ||
+                  payload.error.statusCode === 429 ||
+                  payload.error.name === "rate_limit_exceeded";
+                if (rateLimited && attempt < EMAIL_MAX_RETRIES) {
+                  await new Promise((r) => setTimeout(r, delay));
+                  delay *= 2;
+                  attempt++;
+                  continue;
+                }
+                return { ok: false, rateLimited, message: msg };
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                const rateLimited = /too many requests|rate.?limit|429/i.test(msg);
+                if (rateLimited && attempt < EMAIL_MAX_RETRIES) {
+                  await new Promise((r) => setTimeout(r, delay));
+                  delay *= 2;
+                  attempt++;
+                  continue;
+                }
+                return { ok: false, rateLimited, message: msg };
               }
-            } else {
-              failed++;
-              const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
-              errors.push(`${batch[i]}: ${msg}`);
+            }
+          };
+
+          let sent = 0, failed = 0, rateLimited = 0;
+          const errors: string[] = [];
+          // Process in mini-batches of EMAIL_SUBBATCH with a >1s delay between groups
+          for (let i = 0; i < batch.length; i += EMAIL_SUBBATCH) {
+            const slice = batch.slice(i, i + EMAIL_SUBBATCH);
+            const groupStart = Date.now();
+            const results = await Promise.all(slice.map((e) => sendOne(e)));
+            for (let j = 0; j < results.length; j++) {
+              const r = results[j];
+              if (r.ok) sent++;
+              else {
+                failed++;
+                if (r.rateLimited) rateLimited++;
+                errors.push(`${slice[j]}: ${r.message}`);
+              }
+            }
+            if (i + EMAIL_SUBBATCH < batch.length) {
+              const elapsed = Date.now() - groupStart;
+              const wait = Math.max(0, EMAIL_SUBBATCH_DELAY_MS - elapsed);
+              if (wait > 0) await new Promise((r) => setTimeout(r, wait));
             }
           }
           if (errors.length) console.error(`[job ${job.id}] EMAIL errors:`, errors.slice(0, 10));
@@ -296,6 +331,8 @@ serve(async (req) => {
           await supabase.from("broadcast_jobs").update({
             email_sent: (job.email_sent || 0) + sent,
             email_failed: (job.email_failed || 0) + failed,
+            email_rate_limited: (job.email_rate_limited || 0) + rateLimited,
+            email_provider_rejected: (job.email_provider_rejected || 0) + (failed - rateLimited),
             email_cursor: lastEmailInBatch,
             total_users: totalTargets,
             email_done: exhausted,
@@ -304,7 +341,7 @@ serve(async (req) => {
 
           workDone = true;
           const cumulativeSent = (job.email_sent || 0) + sent;
-          console.log(`[job ${job.id}] EMAIL batch ${batchNum}/${totalBatches} complete: ${sent} sent, ${failed} failed → cumulative ${cumulativeSent}/${totalTargets}`);
+          console.log(`[job ${job.id}] EMAIL batch ${batchNum}/${totalBatches} complete: ${sent} sent, ${failed} failed (${rateLimited} rate-limited after retries) → cumulative ${cumulativeSent}/${totalTargets}`);
         }
       }
     }

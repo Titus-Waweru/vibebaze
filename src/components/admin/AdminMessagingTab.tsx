@@ -35,6 +35,8 @@ interface BroadcastJob {
   total_subscriptions: number;
   email_sent: number;
   email_failed: number;
+  email_rate_limited?: number;
+  email_provider_rejected?: number;
   push_sent: number;
   push_failed: number;
   tokens_removed: number;
@@ -264,7 +266,14 @@ const AdminMessagingTab = () => {
                       </span>
                       <span className="text-muted-foreground">
                         {emailTotal} {job.total_users > 0 ? `/ ${job.total_users}` : ""}
-                        {job.email_failed > 0 && <span className="text-destructive ml-1">({job.email_failed} failed)</span>}
+                        {job.email_failed > 0 && (
+                          <span className="text-destructive ml-1">
+                            ({job.email_sent} delivered
+                            {(job.email_rate_limited ?? 0) > 0 && `, ${job.email_rate_limited} rate-limited`}
+                            {(job.email_provider_rejected ?? 0) > 0 && `, ${job.email_provider_rejected} rejected`}
+                            )
+                          </span>
+                        )}
                       </span>
                     </div>
                     <Progress value={emailPct} className="h-1.5" />
