@@ -212,81 +212,99 @@ serve(async (req) => {
       } else {
         const resend = new Resend(resendApiKey);
 
-        // Cursor-based pagination over auth.users by email (sortable)
-        // We use admin.listUsers with page tracking by storing the last email seen
-        // Page through all users, skip until past cursor, then take EMAIL_BATCH
-        let page = 1;
+        // Collect ALL registered users with an email address — every page until exhausted.
+        // No email_confirmed_at filter: broadcasts must reach every registered user.
         const perPage = 1000;
         const cursor = job.email_cursor as string | null;
-        const batch: string[] = [];
-        let totalSeen = job.total_users || 0;
-        let exhausted = false;
-        let lastEmailInBatch: string | null = cursor;
-
-        // Walk pages until we collect EMAIL_BATCH new users past cursor
-        while (batch.length < EMAIL_BATCH) {
+        const allEmails: string[] = [];
+        let page = 1;
+        let totalRegistered = 0;
+        while (true) {
           const { data: listData, error } = await supabase.auth.admin.listUsers({ page, perPage });
-          if (error || !listData?.users?.length) { exhausted = true; break; }
-
-          // Sort by email for stable cursor
-          const sorted = [...listData.users]
-            .filter((u: any) => u.email && u.email_confirmed_at)
-            .sort((a: any, b: any) => (a.email || "").localeCompare(b.email || ""));
-
-          // On the very first run, count totals (only if not yet set)
-          if (!cursor && page === 1 && !job.total_users) {
-            // Quick count: walk all pages just to count (cheap on small datasets, acceptable)
-            // We approximate by counting current page; full total updated incrementally below.
+          if (error) {
+            console.error(`[job ${job.id}] listUsers page ${page} error:`, error);
+            break;
           }
-
-          for (const u of sorted) {
-            const email = (u as any).email as string;
-            if (cursor && email <= cursor) continue;
-            batch.push(email);
-            lastEmailInBatch = email;
-            if (batch.length >= EMAIL_BATCH) break;
+          if (!listData?.users?.length) break;
+          totalRegistered += listData.users.length;
+          for (const u of listData.users) {
+            const email = (u as any).email as string | undefined;
+            if (email) allEmails.push(email);
           }
-
-          if (listData.users.length < perPage) { exhausted = true; break; }
+          if (listData.users.length < perPage) break;
           page++;
         }
+        // Stable order for resumable cursor
+        allEmails.sort((a, b) => a.localeCompare(b));
+        const dedupedEmails = Array.from(new Set(allEmails));
+        const totalTargets = dedupedEmails.length;
 
-        // Update total_users best-effort (use sent + remaining as rough estimate)
-        if (batch.length === 0 && exhausted) {
-          await supabase.from("broadcast_jobs").update({ email_done: true }).eq("id", job.id);
-        } else if (batch.length > 0) {
-          totalSeen = (job.email_sent || 0) + (job.email_failed || 0) + batch.length;
+        console.log(`[job ${job.id}] EMAIL: registered=${totalRegistered}, with-email=${allEmails.length}, unique=${totalTargets}, cursor=${cursor ?? "<start>"}`);
 
+        // Slice remaining recipients past cursor
+        const remaining = cursor
+          ? dedupedEmails.filter((e) => e > cursor)
+          : dedupedEmails;
+        const batch = remaining.slice(0, EMAIL_BATCH);
+        const exhausted = remaining.length <= EMAIL_BATCH;
+        const lastEmailInBatch = batch.length > 0 ? batch[batch.length - 1] : cursor;
+
+        if (batch.length === 0) {
+          await supabase.from("broadcast_jobs").update({
+            email_done: true,
+            total_users: totalTargets,
+          }).eq("id", job.id);
+          console.log(`[job ${job.id}] EMAIL: no remaining recipients, marking done`);
+        } else {
           const subjectPrefix = typeEmoji[job.message_type] || "📢";
           const html = buildEmailHtml(job.title, job.body, job.message_type);
+          const batchNum = Math.floor(((job.email_sent || 0) + (job.email_failed || 0)) / EMAIL_BATCH) + 1;
+          const totalBatches = Math.ceil(totalTargets / EMAIL_BATCH);
+          console.log(`[job ${job.id}] EMAIL: sending batch ${batchNum}/${totalBatches} (${batch.length} recipients)`);
 
           const results = await Promise.allSettled(
             batch.map((email) =>
               resend.emails.send({
-                from: "VibeBaze <updates@vibebaze.com>",
+                from: "VibeBaze <no-reply@vibebaze.com>",
                 to: [email],
                 subject: `${subjectPrefix} ${job.title}`,
                 html,
-              }).catch((e) => { throw e; })
+              })
             ),
           );
 
           let sent = 0, failed = 0;
-          for (const r of results) {
-            if (r.status === "fulfilled") sent++;
-            else failed++;
+          const errors: string[] = [];
+          for (let i = 0; i < results.length; i++) {
+            const r = results[i];
+            if (r.status === "fulfilled") {
+              const payload = r.value as { data?: unknown; error?: { message?: string } | null };
+              if (payload?.error) {
+                failed++;
+                errors.push(`${batch[i]}: ${payload.error.message ?? "unknown"}`);
+              } else {
+                sent++;
+              }
+            } else {
+              failed++;
+              const msg = r.reason instanceof Error ? r.reason.message : String(r.reason);
+              errors.push(`${batch[i]}: ${msg}`);
+            }
           }
+          if (errors.length) console.error(`[job ${job.id}] EMAIL errors:`, errors.slice(0, 10));
 
           await supabase.from("broadcast_jobs").update({
             email_sent: (job.email_sent || 0) + sent,
             email_failed: (job.email_failed || 0) + failed,
             email_cursor: lastEmailInBatch,
-            total_users: Math.max(job.total_users || 0, totalSeen),
+            total_users: totalTargets,
             email_done: exhausted,
+            last_error: errors[0] ?? job.last_error ?? null,
           }).eq("id", job.id);
 
           workDone = true;
-          console.log(`[job ${job.id}] email batch: ${sent} sent, ${failed} failed`);
+          const cumulativeSent = (job.email_sent || 0) + sent;
+          console.log(`[job ${job.id}] EMAIL batch ${batchNum}/${totalBatches} complete: ${sent} sent, ${failed} failed → cumulative ${cumulativeSent}/${totalTargets}`);
         }
       }
     }

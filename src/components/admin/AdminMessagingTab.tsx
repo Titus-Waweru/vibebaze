@@ -312,7 +312,7 @@ const AdminMessagingTab = () => {
             <AlertDescription className="space-y-2">
               <ul className="list-disc list-inside space-y-1 mt-2 text-sm text-muted-foreground">
                 <li><strong>Architecture:</strong> Cursor-paginated background worker</li>
-                <li><strong>Email batches:</strong> 50 per cycle via Resend (updates@vibebaze.com)</li>
+                <li><strong>Email batches:</strong> 50 per cycle via Resend (no-reply@vibebaze.com)</li>
                 <li><strong>Push batches:</strong> 100 per cycle via FCM V1</li>
                 <li><strong>Resilience:</strong> Self-invoking worker + pg_cron safety net (every minute)</li>
                 <li><strong>Fault tolerance:</strong> Per-message try/catch, failed sends don't halt the job</li>
