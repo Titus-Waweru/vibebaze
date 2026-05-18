@@ -9,6 +9,9 @@ const corsHeaders = {
 };
 
 const EMAIL_BATCH = 50;
+const EMAIL_SUBBATCH = 5;          // Resend: max 5 requests/second
+const EMAIL_SUBBATCH_DELAY_MS = 1100; // >1s to stay under provider limit
+const EMAIL_MAX_RETRIES = 3;
 const PUSH_BATCH = 100;
 const BATCH_DELAY_MS = 300;
 
