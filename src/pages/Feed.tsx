@@ -9,7 +9,6 @@ import { Loader2, MessageCircle, Sparkles, Users, Flame } from "lucide-react";
 import { VideoPlaybackProvider } from "@/contexts/VideoPlaybackContext";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
-import DesktopShell from "@/components/desktop/DesktopShell";
 
 // Calculate engagement score for ranking
 const calculateEngagementScore = (post: any): number => {
@@ -207,7 +206,6 @@ const Feed = () => {
   return (
     <VideoPlaybackProvider>
       <SEO title="Feed | VibeBaze" description="Discover trending videos, photos, and vibes from African creators on VibeBaze." path="/feed" />
-      <DesktopShell>
       <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20 lg:pt-0 lg:pb-4">
         <Navbar />
         {/* Fixed Top Header - Mobile only */}
@@ -294,7 +292,6 @@ const Feed = () => {
           </Tabs>
         </div>
       </div>
-      </DesktopShell>
     </VideoPlaybackProvider>
   );
 };
