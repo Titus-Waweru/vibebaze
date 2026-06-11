@@ -9,6 +9,7 @@ import { Loader2, MessageCircle, Sparkles, Users, Flame } from "lucide-react";
 import { VideoPlaybackProvider } from "@/contexts/VideoPlaybackContext";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
+import DesktopShell from "@/components/desktop/DesktopShell";
 
 // Calculate engagement score for ranking
 const calculateEngagementScore = (post: any): number => {
@@ -206,9 +207,10 @@ const Feed = () => {
   return (
     <VideoPlaybackProvider>
       <SEO title="Feed | VibeBaze" description="Discover trending videos, photos, and vibes from African creators on VibeBaze." path="/feed" />
-      <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20">
+      <DesktopShell>
+      <div className="min-h-screen bg-background pb-20 md:pb-4 md:pt-20 lg:pt-0 lg:pb-4">
         <Navbar />
-        {/* Fixed Top Header - Mobile */}
+        {/* Fixed Top Header - Mobile only */}
         <div className="fixed top-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-b border-border md:hidden">
           <div className="flex items-center justify-between px-4 h-14">
             <h1 className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
@@ -225,9 +227,9 @@ const Feed = () => {
           </div>
         </div>
         
-        <div className="container mx-auto px-4 pt-16 md:pt-6 max-w-2xl">
+        <div className="container mx-auto px-4 pt-16 md:pt-6 lg:pt-8 max-w-2xl">
           <Tabs defaultValue="foryou" className="w-full" onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-3 mb-6 bg-card/50 backdrop-blur-sm sticky top-14 md:top-20 z-30">
+            <TabsList className="grid w-full grid-cols-3 mb-6 bg-card/50 backdrop-blur-sm sticky top-14 md:top-20 lg:top-0 z-30">
               <TabsTrigger value="foryou" className="gap-1.5 data-[state=active]:bg-primary/20">
                 <Sparkles className="h-4 w-4" />
                 <span className="hidden xs:inline">Vibes</span>
@@ -292,6 +294,7 @@ const Feed = () => {
           </Tabs>
         </div>
       </div>
+      </DesktopShell>
     </VideoPlaybackProvider>
   );
 };
