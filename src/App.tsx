@@ -30,6 +30,7 @@ import VerifyEmail from "./pages/VerifyEmail";
 import NotFound from "./pages/NotFound";
 import AiAssistant from "@/components/AiAssistant";
 import PushNotificationReminder from "@/components/PushNotificationReminder";
+import DesktopLayout from "@/components/desktop/DesktopLayout";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -95,23 +96,28 @@ const AppRoutes = () => {
         <Route path="/auth" element={<Auth />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route path="/feed" element={<Feed />} />
+        {/* Desktop-shelled routes (mobile UI untouched) */}
+        <Route element={<DesktopLayout />}>
+          <Route path="/feed" element={<Feed />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/user/:userId" element={<UserProfile />} />
+          <Route path="/search" element={<Search />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/creators-school" element={<CreatorsSchool />} />
+          <Route path="/earnings" element={<Earnings />} />
+          <Route path="/wallet" element={<Wallet />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/post/:postId" element={<PostDetail />} />
+        </Route>
+        <Route element={<DesktopLayout hideRightRail />}>
+          <Route path="/messages" element={<Messages />} />
+        </Route>
         <Route path="/create" element={<CreatePost />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/user/:userId" element={<UserProfile />} />
-        <Route path="/search" element={<Search />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/messages" element={<Messages />} />
         <Route path="/install" element={<Install />} />
-        <Route path="/earnings" element={<Earnings />} />
         <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/post/:postId" element={<PostDetail />} />
-        <Route path="/wallet" element={<Wallet />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
-        <Route path="/creators-school" element={<CreatorsSchool />} />
-        <Route path="/favorites" element={<Favorites />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
