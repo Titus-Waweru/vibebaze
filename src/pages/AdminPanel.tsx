@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
-import { ArrowLeft, Bell, Loader2, Shield, Flag, Users, Activity, LayoutDashboard, Wallet, Heart } from "lucide-react";
+import { ArrowLeft, Bell, Loader2, Shield, Flag, Users, Activity, LayoutDashboard, Wallet, Heart, HardDrive } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import AdminModerationTab from "@/components/admin/AdminModerationTab";
@@ -15,6 +15,7 @@ import AdminWalletsTab from "@/components/admin/AdminWalletsTab";
 import AdminDashboardTab from "@/components/admin/AdminDashboardTab";
 import AdminMessagingTab from "@/components/admin/AdminMessagingTab";
 import AdminLikesTab from "@/components/admin/AdminLikesTab";
+import AdminSystemHealthTab from "@/components/admin/AdminSystemHealthTab";
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -102,7 +103,7 @@ const AdminPanel = () => {
         </div>
 
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid grid-cols-8 w-full">
+          <TabsList className="grid grid-cols-9 w-full">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <LayoutDashboard className="h-4 w-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -126,6 +127,10 @@ const AdminPanel = () => {
             <TabsTrigger value="wallets" className="flex items-center gap-2">
               <Wallet className="h-4 w-4" />
               <span className="hidden sm:inline">Wallets</span>
+            </TabsTrigger>
+            <TabsTrigger value="system" className="flex items-center gap-2">
+              <HardDrive className="h-4 w-4" />
+              <span className="hidden sm:inline">System</span>
             </TabsTrigger>
             <TabsTrigger value="logs" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
@@ -159,6 +164,10 @@ const AdminPanel = () => {
 
           <TabsContent value="wallets">
             <AdminWalletsTab />
+          </TabsContent>
+
+          <TabsContent value="system">
+            <AdminSystemHealthTab />
           </TabsContent>
 
           <TabsContent value="logs">
