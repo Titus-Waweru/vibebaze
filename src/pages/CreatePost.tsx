@@ -15,6 +15,7 @@ import Navbar from "@/components/Navbar";
 import HashtagSuggestions from "@/components/HashtagSuggestions";
 import { Image, Video, Music, FileText, Upload, X, Eye, Type } from "lucide-react";
 import MediaTextEditor from "@/components/editor/MediaTextEditor";
+import { compressImage } from "@/lib/imageCompression";
 
 const MAX_VIDEO_DURATION_SECONDS = 8 * 60; // 8 minutes
 
@@ -237,7 +238,10 @@ const CreatePost = () => {
       let mediaUrl = null;
       let thumbnailUrl: string | null = null;
       if (file) {
-        mediaUrl = await uploadFile(file);
+        // Auto-optimize images before upload (resize + WebP re-encode, strips EXIF)
+        const fileToUpload =
+          postType === "image" ? await compressImage(file) : file;
+        mediaUrl = await uploadFile(fileToUpload);
         // Auto-generate thumbnail for videos so shares (OG previews) display correctly
         if (postType === "video") {
           thumbnailUrl = await generateAndUploadVideoThumbnail(file);
