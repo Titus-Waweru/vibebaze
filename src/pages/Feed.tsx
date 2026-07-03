@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PostCard from "@/components/PostCard";
+import PostCardSkeleton from "@/components/PostCardSkeleton";
 import Navbar from "@/components/Navbar";
 import { Loader2, MessageCircle, Sparkles, Users, Flame } from "lucide-react";
 import { VideoPlaybackProvider } from "@/contexts/VideoPlaybackContext";
 import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
+
+const PAGE_SIZE = 10;
 
 // Calculate engagement score for ranking
 const calculateEngagementScore = (post: any): number => {
@@ -37,6 +40,10 @@ const Feed = () => {
   const [followingLoading, setFollowingLoading] = useState(false);
   const [trendingLoading, setTrendingLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("foryou");
+  const [forYouCursor, setForYouCursor] = useState<string | null>(null);
+  const [forYouHasMore, setForYouHasMore] = useState(true);
+  const [forYouLoadingMore, setForYouLoadingMore] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -74,7 +81,7 @@ const Feed = () => {
         `)
         .eq("is_private", false)
         .order("created_at", { ascending: false })
-        .limit(50);
+        .limit(PAGE_SIZE);
 
       if (error) throw error;
       
@@ -87,23 +94,81 @@ const Feed = () => {
         return true;
       });
 
-      // Apply engagement-based algorithm
       const rankedPosts = validPosts
         .map(post => ({ ...post, engagementScore: calculateEngagementScore(post) }))
         .sort((a, b) => {
           const engagementDiff = b.engagementScore - a.engagementScore;
           const timeDiff = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
           return (engagementDiff * 0.7) + (timeDiff * 0.0000003);
-        })
-        .slice(0, 20);
-      
+        });
+
       setForYouPosts(rankedPosts);
+      if (data && data.length > 0) {
+        setForYouCursor(data[data.length - 1].created_at);
+      }
+      setForYouHasMore((data?.length || 0) === PAGE_SIZE);
     } catch (error) {
       console.error("Error fetching posts:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  const fetchMoreForYou = useCallback(async () => {
+    if (forYouLoadingMore || !forYouHasMore || !forYouCursor) return;
+    try {
+      setForYouLoadingMore(true);
+      const { data, error } = await supabase
+        .from("posts")
+        .select(`
+          *,
+          profiles:user_id (
+            username,
+            avatar_url,
+            full_name
+          )
+        `)
+        .eq("is_private", false)
+        .lt("created_at", forYouCursor)
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE);
+
+      if (error) throw error;
+
+      const validPosts = (data || []).filter(post => {
+        if (post.type === "text") return true;
+        return !!post.media_url;
+      }).map(post => ({ ...post, engagementScore: calculateEngagementScore(post) }));
+
+      setForYouPosts(prev => {
+        const seen = new Set(prev.map(p => p.id));
+        return [...prev, ...validPosts.filter(p => !seen.has(p.id))];
+      });
+      if (data && data.length > 0) {
+        setForYouCursor(data[data.length - 1].created_at);
+      }
+      setForYouHasMore((data?.length || 0) === PAGE_SIZE);
+    } catch (err) {
+      console.error("Error loading more:", err);
+    } finally {
+      setForYouLoadingMore(false);
+    }
+  }, [forYouCursor, forYouHasMore, forYouLoadingMore]);
+
+  // Infinite scroll: observe sentinel
+  useEffect(() => {
+    if (activeTab !== "foryou") return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) fetchMoreForYou();
+      },
+      { rootMargin: "600px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [activeTab, fetchMoreForYou]);
 
   const fetchFollowingPosts = async () => {
     if (!user) return;
@@ -244,17 +309,32 @@ const Feed = () => {
 
             <TabsContent value="foryou" className="space-y-6">
               {loading ? (
-                <div className="flex justify-center py-20">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="space-y-6">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <PostCardSkeleton key={i} />
+                  ))}
                 </div>
               ) : forYouPosts.length === 0 ? (
                 <div className="text-center py-20">
                   <p className="text-muted-foreground">No vibes yet. Be the first to drop one!</p>
                 </div>
               ) : (
-                forYouPosts.map((post) => (
-                  <PostCard key={post.id} post={post} currentUserId={user?.id} />
-                ))
+                <>
+                  {forYouPosts.map((post) => (
+                    <PostCard key={post.id} post={post} currentUserId={user?.id} />
+                  ))}
+                  <div ref={sentinelRef} className="h-4" />
+                  {forYouLoadingMore && (
+                    <div className="flex justify-center py-6">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  )}
+                  {!forYouHasMore && forYouPosts.length > 0 && (
+                    <p className="text-center text-xs text-muted-foreground py-6">
+                      You're all caught up ✨
+                    </p>
+                  )}
+                </>
               )}
             </TabsContent>
 
