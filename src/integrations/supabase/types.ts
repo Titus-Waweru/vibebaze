@@ -1481,6 +1481,9 @@ export type Database = {
       }
     }
     Functions: {
+      admin_db_stats: { Args: never; Returns: Json }
+      admin_media_stats: { Args: never; Returns: Json }
+      admin_storage_stats: { Args: never; Returns: Json }
       check_earnings_unlocked: { Args: { p_user_id: string }; Returns: boolean }
       check_otp_rate_limit: { Args: { p_user_id: string }; Returns: boolean }
       check_rate_limit: {
