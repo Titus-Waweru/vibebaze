@@ -139,18 +139,19 @@ const PostCard = ({ post, currentUserId }: PostCardProps) => {
       try {
         await navigator.share({ title, text, url });
         return;
-      } catch {}
+      } catch {
+        // User cancelled or share failed — do not force any redirect.
+        return;
+      }
     }
-    // Desktop fallback: open WhatsApp/X share or copy
-    const encoded = encodeURIComponent(`${text}${url}`);
-    const wa = `https://wa.me/?text=${encoded}`;
+    // Desktop fallback: just copy the link. Sharing to a specific app only
+    // happens when the user explicitly picks it from a share menu.
     try {
       await navigator.clipboard.writeText(url);
-      toast.success("Link copied! Opening WhatsApp...", { duration: 2000 });
+      toast.success("Link copied to clipboard!");
     } catch {
-      toast.success("Opening WhatsApp share...");
+      toast.error("Could not copy link");
     }
-    window.open(wa, "_blank", "noopener,noreferrer");
   };
 
   const handleCopyLink = () => {
