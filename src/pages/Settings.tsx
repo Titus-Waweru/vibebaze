@@ -81,15 +81,20 @@ const Settings = () => {
       setExternalLinks(Array.isArray(data.external_links) ? (data.external_links as any[]).map((l: any) => ({ label: String(l?.label || ''), url: String(l?.url || '') })) : []);
       setLastProfileUpdate(data.last_profile_update);
 
-      // Check if user can edit (10 days since last update)
-      if (data.last_profile_update) {
-        const lastUpdate = new Date(data.last_profile_update);
-        const now = new Date();
-        const daysDiff = Math.floor((now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
-        
-        if (daysDiff < 10) {
-          setCanEdit(false);
-          setDaysUntilEdit(10 - daysDiff);
+      // Check if user can edit (10 days since last actual profile update).
+      // New accounts get last_profile_update defaulted to signup time — treat
+      // updates within 2 minutes of account creation as "never edited" so new
+      // users aren't locked out of their first edit.
+      if (data.last_profile_update && data.created_at) {
+        const lastUpdate = new Date(data.last_profile_update).getTime();
+        const createdAt = new Date(data.created_at).getTime();
+        const hasEverEdited = lastUpdate - createdAt > 2 * 60 * 1000;
+        if (hasEverEdited) {
+          const daysDiff = Math.floor((Date.now() - lastUpdate) / (1000 * 60 * 60 * 24));
+          if (daysDiff < 10) {
+            setCanEdit(false);
+            setDaysUntilEdit(10 - daysDiff);
+          }
         }
       }
     } catch (error) {
