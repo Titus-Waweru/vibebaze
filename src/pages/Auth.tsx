@@ -25,13 +25,16 @@ const Auth = () => {
 
   // Redirect authenticated users away from auth page
   useEffect(() => {
+    let cancelled = false;
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled || (window as any).__vb_signingUp) return;
       if (session) navigate(redirectTo, { replace: true });
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if ((window as any).__vb_signingUp) return;
       if (session) navigate(redirectTo, { replace: true });
     });
-    return () => subscription.unsubscribe();
+    return () => { cancelled = true; subscription.unsubscribe(); };
   }, [navigate, redirectTo]);
   const defaultTab = searchParams.get("mode") === "signup" || referralCode ? "signup" : "login";
 
