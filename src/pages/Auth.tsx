@@ -83,6 +83,7 @@ const Auth = () => {
     }
 
     setLoading(true);
+    (window as any).__vb_signingUp = true;
     const { data, error } = await signUp(
       signupData.email,
       signupData.password,
@@ -92,6 +93,7 @@ const Auth = () => {
     
     if (error) {
       setLoading(false);
+      (window as any).__vb_signingUp = false;
       toast.error(error.message);
       return;
     }
@@ -158,6 +160,7 @@ const Auth = () => {
         setLoading(false);
         toast.success("Account created! Please verify your email.");
         navigate(`/verify-email?email=${encodeURIComponent(signupData.email)}`);
+        setTimeout(() => { (window as any).__vb_signingUp = false; }, 1000);
         return;
       } catch (otpError) {
         console.error("OTP send error:", otpError);
@@ -165,6 +168,7 @@ const Auth = () => {
     }
 
     setLoading(false);
+    (window as any).__vb_signingUp = false;
     toast.success("Account created! Welcome to VibeBaze!");
     navigate("/feed");
   };
